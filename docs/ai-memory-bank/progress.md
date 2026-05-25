@@ -4,11 +4,17 @@
 
 - Создана структура репозитория (openspec, docs/adr)
 - ADR 0001: структура хранения ADR принята
-- OpenSpec change `init-repository-rules` создан и артефакты готовы
+- OpenSpec change `init-repository-rules` создан, заархивирован
+- Правила Cline, memory bank, gitignore, .clineignore созданы
+- OpenSpec change `init-repository-adrs` создан и реализован
+- ADR 0002: структура директорий репозитория принята
+- ADR 0003: code style для C# принят
+- ADR 0004: code style для Markdown принят
+- Шаблоны OpenSpec обновлены под Markdown code style (ADR-0004)
 
 ## В процессе
 
-- Применение change `init-repository-rules` (создание правил Cline, memory bank, gitignore, обновление OpenSpec)
+- Нет
 
 ## Осталось
 
