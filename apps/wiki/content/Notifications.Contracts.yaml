@@ -1,0 +1,56 @@
+﻿swagger: '2.0'
+info:
+  title: Notifications
+  version: 1.0.0
+  description: Контракт отправки уведомлений
+schemes: []
+consumes:
+  - application/json
+produces:
+  - application/json
+basePath: /api/assets_processing/v1/notifications
+
+paths:
+  /masterData/trendVulnerabilitiesDiscovered:
+    post:
+      operationId: TrendVulnerabilitiesDiscovered
+      parameters:
+        - in: body
+          name: payload
+          schema:
+            $ref: '#/definitions/TrendVulnerabilitiesDiscoveredPayload'
+      responses:
+        202:
+          description: 'Уведомление отправлено'
+        400:
+          description: Trend Vulnerability Not Found
+          x-errors:
+            - $ref: '#/definitions/TrendVulnerabilityNotFoundError'
+
+definitions:
+  TrendVulnerabilitiesDiscoveredPayload:
+    description: Обнаружены трендовые уязвимости
+    type: object
+    required:
+      - trendVulnerabilities
+    properties:
+      trendVulnerabilities:
+        type: array
+        items:
+          type: integer
+          format: int64
+
+  TrendVulnerabilityNotFoundError:
+    description: Уязвимость не найдена
+    x-discriminator: core.notifications.trendVulnerabilityNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - identifiers
+        properties:
+          identifiers:
+            type: array
+            items:
+              type: integer
+              format: int64

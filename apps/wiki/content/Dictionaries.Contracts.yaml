@@ -1,0 +1,73 @@
+﻿swagger: '2.0'
+info:
+  title: Dictionaries
+  description: Запрос справочников
+  version: "1.0.0"
+schemes:
+  - http
+produces:
+  - application/json
+paths:
+  /api/dictionaries/asset/contextMetrics/{metric}:
+    get:
+      operationId: GetContextMetric
+      description: Получить справочник по контекстным метрикам
+      parameters:
+        - name : metric
+          description: Имя метрики
+          schema:
+             $ref: '#/definitions/ContextMetric'
+          in: path
+          required: true
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+                $ref: '#/definitions/DictionaryEntry'
+  /api/importance:
+    get:
+      operationId: GetImportance
+      description: Получить справочник по значимости
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+                $ref: '#/definitions/DictionaryEntry'
+ 
+definitions:
+  ContextMetric:
+    type: string
+    enum:
+      - ar
+      - cdp
+      - cr
+      - ir
+      - td
+  Severity:
+    type: string
+    enum:
+      - notDefined
+      - none
+      - low
+      - belowMedium
+      - medium
+      - aboveMedium
+      - high
+
+  DictionaryEntry:
+    type: object
+    properties:
+      id:
+        type: string
+      severity:
+        $ref: '#/definitions/Severity'
+      displayName:
+        type: string
+    required:
+      - id
+      - severity
+      - displayName

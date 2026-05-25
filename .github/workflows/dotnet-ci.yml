@@ -1,0 +1,49 @@
+name: .NET CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build, Test & Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore apps/wiki/wiki.slnx
+
+      - name: Build
+        run: dotnet build apps/wiki/wiki.slnx --no-restore --configuration Release
+
+      - name: Test with coverage
+        run: >
+          dotnet test apps/wiki/wiki.slnx
+          --no-build
+          --configuration Release
+          --collect:"XPlat Code Coverage"
+          --results-directory ./coverage
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE_FILE=$(find ./coverage -name "coverage.cobertura.xml" | head -1)
+          if [ -z "$COVERAGE_FILE" ]; then
+            echo "Coverage file not found!"
+            exit 1
+          fi
+          LINE_RATE=$(grep -o 'line-rate="[^"]*"' "$COVERAGE_FILE" | head -1 | grep -o '[0-9.]*')
+          echo "Line coverage rate: $LINE_RATE"
+          THRESHOLD=0.80
+          if (( $(echo "$LINE_RATE < $THRESHOLD" | bc -l) )); then
+            echo "Coverage $LINE_RATE is below threshold $THRESHOLD"
+            exit 1
+          fi
+          echo "Coverage check passed: $LINE_RATE >= $THRESHOLD"

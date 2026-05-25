@@ -1,0 +1,171 @@
+﻿swagger: '2.0'
+info:
+  title: QueuesMonitoring
+  description: Контракт для получения стадий обработки активов.
+  version: "1.0.0"
+schemes:
+  - https
+basePath: /api/assets_processing/v1/queues_statistics
+produces:
+  - application/json
+paths:
+  /buffering:
+    get:
+      operationId: GetBufferingPipe
+      description: Получить стадию буферизации обработки активов
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/QueueStatistics'
+  /merging:
+    get:
+      operationId: GetMergingPipe
+      description: Получить стадию слияния обработки активов
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/QueueStatistics'
+  /vulnerabilities:
+    get:
+      operationId: GetVulnerabilitiesPipe
+      description: Получить стадию рассчета уязвимостей обработки активов
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/QueueStatistics'
+        400:
+          description: Отсутствует VM лицензия
+          x-errors:
+            - $ref: '#/definitions/VulnerabilitiesLicenceAbsentError'
+
+  /commitMetadata:
+    get:
+      operationId: GetCommitMetadata
+      description: Получить метаданные по обработанным сканам
+      parameters:
+        - name: offset
+          description: Смещение от начала результатов выборки.
+          in: query
+          type: integer
+          format: int64
+          required: true
+        - name: limit
+          description: Размер страницы выдачи.
+          in: query
+          type: integer
+          format: int32
+          required: true
+        - name: streamTypes
+          in: query
+          type: array
+          required: false
+          items:
+            type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/CommitMetadata'
+        400:
+          description: Badly formatted request.
+
+definitions:
+  QueueStatistics:
+    type: object
+    description: Стадии обработки активов
+    properties:
+      queueLength:
+        description: Отставание (в количестве пакетов).
+        $ref: '#/definitions/QueueLength'
+      waitingTime:
+        description: Время обработки текущего элемента (в секундах).
+        $ref: '#/definitions/WaitingTime'
+      firstPackageTime:
+        type: string
+        format: date-time
+      lastPackageTime:
+        type: string
+        format: date-time
+      lastProcessedCheckpoint:
+        type: integer
+        format: int64
+      processingSpeed:
+        type: number
+        format: double
+    required:
+      - queueLength
+      - processingSpeed
+
+  QueueLength:
+    type: object
+    description: Длина очереди и пороговые значения
+    properties:
+      value:
+        type: integer
+        format: int64
+      allowedThreshold:
+        type: integer
+        format: int64
+      criticalThreshold:
+        type: integer
+        format: int64
+    required:
+      - value
+      - allowedThreshold
+      - criticalThreshold
+
+  WaitingTime:
+    type: object
+    description: Период ожидания и пороговые значения
+    properties:
+      value:
+        type: string
+        format: duration
+      allowedThreshold:
+        type: string
+        format: duration
+      criticalThreshold:
+        type: string
+        format: duration
+    required:
+      - value
+      - allowedThreshold
+      - criticalThreshold
+  CommitMetadata:
+    type: object
+    description: Информация о коммите
+    properties:
+      checkpoint:
+        type: integer
+        format: int64
+      timeStamp:
+        type: string
+        format: date-time
+      streamType:
+        type: string
+        description: Тип стрима.
+      streamId:
+        type: string
+        description: Идентификатор стрима.
+      streamRevision:
+        type: integer
+        format: int32
+        description: Ревизия стрима.
+    required:
+      - checkpoint
+      - timeStamp
+      - streamType
+      - streamId
+      - streamRevision
+        
+  VulnerabilitiesLicenceAbsentError:
+    description: Отсутствует VM лицензия
+    x-discriminator: core.queuesMonitoring.vulnerabilitiesLicenceAbsent.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object

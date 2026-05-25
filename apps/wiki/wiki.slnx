@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Wiki.Api/Wiki.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Wiki.Api.Tests/Wiki.Api.Tests.csproj" />
+  </Folder>
+</Solution>

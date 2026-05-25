@@ -1,0 +1,202 @@
+﻿swagger: "2.0"
+info:
+  title: DeploymentTarget
+  description: A Deployment Target API that will be used by Content Deployer service
+  version: "1.0.0"
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+basePath: /api/deployment-target/v1
+paths:
+  /deployments/{deploymentId}:
+    put:
+      operationId: StartDeployment
+      summary: Start deployment
+      description: Begin deployment of a predefined set of packages
+      parameters:
+        - in: path
+          name: deploymentId
+          type: string
+          required: true
+          description: Deployment identifier.
+          format: uuid
+        - in: body
+          name: items
+          required: true
+          description: Description of packages to be deployed.
+          schema:
+            type: array
+            description: Collection of items describing what and where need to be deployed.
+            items:
+              $ref: '#/definitions/Package'
+      responses:
+        201:
+          description: Deployment started
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        400:
+          description: Bad request
+          x-errors:
+            - $ref: '#/definitions/DeploymentTargetBusy'
+        503:
+          description: ServiceUnavailable
+
+    get:
+      operationId: GetDeploymentStatus
+      summary: Returns status of the deployment
+      description: Returns status of active or last completed deployment. If the deployment id differ from the one being started previously the service should return DeploymentNotFound error
+      parameters:
+        - in: path
+          name: deploymentId
+          type: string
+          required: true
+          description: Deployment identifier.
+          format: uuid
+
+      responses:
+        200:
+          description: Deployment status
+          schema:
+            $ref: '#/definitions/DeploymentStatusResponse'
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        400:
+          description: Bad request
+          x-errors:
+            - $ref: '#/definitions/DeploymentNotFound'
+        503:
+          description: ServiceUnavailable
+
+  /deployments/{deploymentId}/abort:
+    put:
+      operationId: AbortDeployment
+      summary: Forcibly cancel deployment due to some reason.
+      parameters:
+        - in: path
+          name: deploymentId
+          type: string
+          required: true
+          description: Deployment identifier.
+          format: uuid
+
+      responses:
+        201:
+          description: Deployment abortion request acquired
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        400:
+          description: Bad request
+          x-errors:
+            - $ref: '#/definitions/DeploymentNotFound'
+            - $ref: '#/definitions/DeploymentAlreadyCompleted'
+        503:
+          description: ServiceUnavailable
+
+definitions:
+
+  Package:
+    type: object
+    description: Package description.
+    properties:
+      id:
+        description: Package identifier.
+        type: string
+      version:
+        description: Package version (SemVer 2.0).
+        type: string
+      schemaVersion:
+        description: Package schema version.
+        type: string
+      downloadUri:
+        description: An URI to download package contents.
+        type: string
+
+    required:
+      - id
+      - version
+      - schemaVersion
+      - downloadUri
+
+  DeploymentStatusResponse:
+    description: Contain actual deployment status description
+    type: object
+    properties:
+      status:
+        description: Overall deployment status
+        $ref: '#/definitions/DeploymentStatus'
+
+      progress:
+        description: Overall deployment completion percent
+        type: integer
+
+      packageStatuses:
+        description: Deployment status per package included into a deployment
+        type: array
+        items:
+          $ref: '#/definitions/PackageDeploymentStatus'
+
+    required:
+      - status
+      - progress
+      - packageStatuses
+
+  DeploymentStatus:
+    type: string
+    enum:
+      - inProgress
+      - succeeded
+      - failed
+      - cancelled
+
+  PackageDeploymentStatus:
+    type: object
+    description: Describes status of package deployment.
+    properties:
+      id:
+        description: Package identifier.
+        type: string
+      version:
+        description: Package version (SemVer 2.0).
+        type: string
+      schemaVersion:
+        description: Package schema version.
+        type: string
+      status:
+        description: Current status
+        $ref: '#/definitions/DeploymentStatus'
+
+    required:
+      - id
+      - version
+      - schemaVersion
+      - status
+
+  DeploymentNotFound:
+    x-discriminator: deployment-target.not.found.deployment
+    description: Deployment not found.
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  DeploymentAlreadyCompleted:
+    x-discriminator: deployment-target.deployment.completed
+    description: Deployment has been completed already.
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  DeploymentTargetBusy:
+    x-discriminator: deployment-target.busy
+    description: Deployment target is currently performing another deployment.
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object

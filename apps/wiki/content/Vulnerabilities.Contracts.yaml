@@ -1,0 +1,136 @@
+﻿swagger: '2.0'
+info:
+  title: Vulnerabilities
+  description: API запросов информации по уязвимостям
+  version: "1.0.0"
+schemes:
+  - http
+produces:
+  - application/json
+paths:
+  /api/vulnerabilities:
+    get:
+      operationId: GetVulnerabilityDescription
+      description: Получить описания уязвимостей по набору Id
+      parameters:
+        - name : vulnerabilityIds
+          description: Идентификаторы уязвимостей.
+          type: array
+          items:
+            type: string
+            format: uuid
+          in: query
+          required: true
+      responses:
+        204:
+          description: NoContent
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+                $ref: '#/definitions/VulnerabilityDescription'
+                
+  /api/vulnerabilities/affectedChecks: 
+    get:
+      operationId: GetAffectedChecks
+      description: Получить идентификаторы проверок затронутые уязвимостью по CVE уязвимости (Нужно для BlackBox pentest)
+      parameters:
+        - name : cves
+          description: CVE идентификаторы
+          type: array
+          items:
+            type: string
+          in: query
+          required: true
+      responses:
+        204:
+          description: NoContent
+        400:
+          description: ''
+        200:
+          description: OK
+          schema:
+              type: array
+              items:
+                  type: string
+
+  /api/vulnerabilities/affectedChecks/Validate:
+    get:
+      operationId: ValidateAffectedChecks
+      parameters:
+        - name : cve
+          description: CVE идентификатор
+          type: string
+          in: query
+          required: true
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/CveInfo'
+
+definitions:
+  CveInfo:
+    type: object
+    required:
+    - cveLookupResult
+    properties:
+      cveLookupResult: 
+        "$ref": '#/definitions/CveLookupResult'
+
+  CveLookupResult:
+    type: string
+    enum:
+    - found
+    - notFound
+    - cannotScan
+    description: ''
+
+  VulnerabilityDescription:
+    type: object
+    required:
+    - id
+    - vulnerabilityLevel
+    - cvssBase
+    - cvssTemporal
+    properties:
+      id:
+        type: string
+        format: uuid
+      title:
+        type: string
+      vulnerabilityLevel:
+        type: integer
+      cvssBase:
+        type: number
+        format: decimal
+      cvssTemporal:
+        type: number
+        format: decimal
+      cve:
+        type: string
+      shortDescription:
+        type: string
+      howToFix:
+        type: string
+      cvssBaseDescription:
+        type: string
+      cvssTemporalDescription:
+        type: string
+      cvssEnvironmentalDescription:
+        type: string
+      description:
+        type: string
+      links:
+        type: array
+        items: 
+          type: string
+      cveList:
+        type: array
+        items: 
+          type: string
+      otherClassesList:
+        type: array
+        items: 
+          type: string

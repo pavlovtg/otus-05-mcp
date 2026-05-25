@@ -1,0 +1,442 @@
+﻿swagger: '2.0'
+info:
+  title: DebugTriggers
+  version: '1.0'
+  description: Контракт для получения данных по триггерам из Quartz.
+schemes: []
+consumes:
+  - application/json
+basePath: /api/triggers/v1/debug
+produces:
+  - application/json
+paths:
+  /triggers:
+    get:
+      operationId: GetTriggers
+      description: Возвращает список триггеров
+      parameters:
+        - description: 'Типы метатригеров, которые будут включены в выборку. Если не указано - то все.'
+          type: array
+          items:
+            type: string
+          name: metatype
+          in: query
+          required: false
+      responses:
+        '200':
+          description: Список триггеров.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TriggerDto'
+
+  /triggers/{triggerId}:
+    get:
+      operationId: GetTriggerById
+      description: Возвращает описание триггера по идентифкатору.
+      parameters:
+        - type: string
+          description: Идентификатор триггера.
+          name: triggerId
+          in: path
+          required: true
+          format: guid
+      responses:
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/TriggerNotFoundError'
+        200:
+          description: Описание тригера.
+          schema:
+            $ref: '#/definitions/TriggerDetailsDto'
+
+definitions:
+
+  TriggerDto:
+    type: object
+    description: Описание триггера.
+    required:
+      - id
+      - name
+    properties:
+      id:
+        description: Уникальный идентификатор.
+        type: string
+        format: guid
+      name:
+        description: Наименование.
+        type: string
+
+  TriggerDetailsDto:
+    type: object
+    description: Описание триггера.
+    required:
+      - id
+      - name
+      - metaType
+      - status
+      - lastUpdate
+      - reactions
+      - schedulingParameters
+    properties:
+      id:
+        description: Уникальный идентификатор.
+        type: string
+        format: guid
+      name:
+        description: Наименование.
+        type: string
+      metaType:
+        description: Мета-тип.
+        type: string
+      status:
+        description: Статус.
+        $ref: '#/definitions/TriggerStatus'
+      authorId:
+        description: Идентификатор создателя.
+        type: string
+      created:
+        description: Время создания триггера.
+        type: string
+        format: date-time
+      lastUpdate:
+        description: Время последнего обновления.
+        type: string
+        format: date-time
+      lastFired:
+        description: Время последнего срабатывания триггера. Внимание. Не эквивалентно времени последней отправки уведомления. Опционально.
+        type: string
+        format: date-time
+      reactions:
+        description: Реакции.
+        type: array
+        items:
+          $ref: '#/definitions/ReactionDto'
+      parameters:
+        description: Параметры срабатывания.
+        $ref: '#/definitions/TriggerParametersDto'
+      timeZoneId:
+        type: string
+        description: IANA-идентификатор таймзоны триггера для отображения дат в уведомлении.
+      debugInfo:
+        description: Параметры из Quartz.
+        $ref: '#/definitions/DebugInfoDto'
+        
+  ReactionDto:
+    type: object
+    discriminator: type
+    description: Реакция на срабатывание.
+    required:
+      - type
+    properties:
+      type:
+        type: string
+  EmailNotification:
+    type: object
+    description: Реакция на срабатывание - отправка письма по e-mail.
+    allOf:
+      - $ref: '#/definitions/ReactionDto'
+      - type: object
+        properties:
+          participants:
+            type: array
+            description: Получатели письмем с данными.
+            items:
+              $ref: '#/definitions/ParticipantDto'
+        required:
+          - participants
+  WebHook:
+    type: object
+    description: Реакция на срабатывание - http post запрос.
+    allOf:
+      - $ref: '#/definitions/ReactionDto'
+      - type: object
+        properties:
+          uri:
+            type: string
+            description: Uri для отправки post-запроса.
+          checkSsl:
+            type: boolean
+            description: Проверять SSL при отправке web hook уведомления через HTTPS соединение.
+            default: false
+        required:
+          - uri
+  ParticipantDto:
+    type: object
+    description: Получатель письма.
+    discriminator: type
+    required:
+      - type
+    properties:
+      type:
+        type: string
+  EmailParticipantDto:
+    type: object
+    description: Получатель письма с указанным e-mail адресом.
+    allOf:
+      - $ref: '#/definitions/ParticipantDto'
+      - type: object
+        properties:
+          email:
+            type: string
+  SystemParticipantDto:
+    type: object
+    description: Получатель письма - пользователь системы.
+    allOf:
+      - $ref: '#/definitions/ParticipantDto'
+      - type: object
+        properties:
+          id:
+            description: Идентификатор пользователя системы.
+            type: string
+            format: guid
+  ContextParticipantDto:
+    type: object
+    description: Контекстно зависимый получатель письма, например ответственный за инцидент.
+    allOf:
+      - $ref: '#/definitions/ParticipantDto'
+      - type: object
+        properties:
+          id:
+            type: string
+            description: Идентификатор.
+  TriggerParametersDto:
+    description: Базовый тип параметров срабатывания
+    type: object
+    discriminator: type
+    required:
+      - type
+    properties:
+      type:
+        type: string
+
+  TriggerByEventsParametersDto:
+    description: Параметры срабатывания по событиям
+    type: object
+    allOf:
+      - $ref: '#/definitions/TriggerParametersDto'
+
+  TriggerBySchedulerParametersDto:
+    description: Базовые параметры срабатывания по таймеру
+    type: object
+    allOf:
+      - $ref: '#/definitions/TriggerParametersDto'
+      - type: object
+        required:
+          - fromDate
+        properties:
+          fromDate:
+            type: string
+            format: date-time
+          toDate:
+            type: string
+            format: date-time
+
+  DebugInfoDto:
+    description: Параметры из Quartz
+    type: object
+    required:
+      - startTimeUtc
+    properties:
+      triggerJobCommand:
+        $ref: '#/definitions/TriggerJobCommand'
+      startTimeUtc:
+        type: string
+        format: date-time
+      endTimeUtc:
+        type: string
+        format: date-time
+      finalFireTimeUtc:
+        type: string
+        format: date-time
+      previousFireTimeUtc:
+        type: string
+        format: date-time
+      nextFireTimeUtc:
+        type: string
+        format: date-time
+
+  DailyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - 1 раз в день
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - daysOfWeek
+        properties:
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          daysOfWeek:
+            type: array
+            items:
+              $ref: '#/definitions/DayOfWeek'
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  WeeklyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - каждую неделю, 1 раз в заданные дни недели
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - daysOfWeek
+        properties:
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          daysOfWeek:
+            type: array
+            items:
+              $ref: '#/definitions/DayOfWeek'
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  PeriodicTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - каждые n дней
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - repeatInterval
+        properties:
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          repeatInterval:
+            type: integer
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  RepeatableDailyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - несколько раз в день
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - daysOfWeek
+          - repeatInterval
+        properties:
+          repeatInterval:
+            type: string
+            format:  time-span
+          fromTimeOfTheDay:
+            type: string
+            format:  time-span
+          toTimeOfTheDay:
+            type: string
+            format:  time-span
+          timeZone:
+            type: string
+            format: timezone
+          daysOfWeek:
+            type: array
+            items:
+              $ref: '#/definitions/DayOfWeek'
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  FortnightlyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - каждые 2 недели
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - daysOfWeek
+        properties:
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          daysOfWeek:
+            type: array
+            items:
+              $ref: '#/definitions/DayOfWeek'
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  MonthlyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - каждый месяц
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - daysOfWeek
+        properties:
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          onDays:
+            type: array
+            items:
+              type: integer
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  DayOfWeek:
+    type: string
+    description: дни недели.
+    enum:
+      - notDefined
+      - sunday
+      - monday
+      - tuesday
+      - wednesday
+      - thursday
+      - friday
+      - saturday
+
+  TriggerStatus:
+    type: string
+    description: Состояние триггера.
+    enum:
+      - unknown
+      - active
+      - inactive
+      - invalid
+
+  TriggerJobCommand:
+    type: string
+    enum:
+      - unknown
+      - fireTrigger
+      - validateTrigger
+
+  TriggerNotFoundError:
+    description: Триггер был удалён/не найден
+    x-discriminator: core.triggers.triggerNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object

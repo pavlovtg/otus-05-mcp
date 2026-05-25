@@ -1,0 +1,681 @@
+swagger: '2.0'
+info:
+  version: 1.0.0
+  title: 'AnalyticsDataExporter'
+  description: 'API сервиса экспорта данных'
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+  - application/vnd.ms-excel
+  - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+  - application/octet-stream
+  - application/xml
+  - text/csv
+basePath: /api/data_exporter
+paths:
+  /v1/data/export:
+    post:
+      summary: 'Получить файл экспорта данных'
+      operationId: GetExportData
+      parameters:
+        - name: body
+          in: body
+          description: 'Тело запроса'
+          schema: { $ref: '#/definitions/ExportParametersBase' }
+          required: true
+      responses:
+        200:
+          description: 'Файл с данными'
+          schema:
+            type: file
+            format: named-file
+        400:
+          description: 'BadRequest'
+          x-errors:
+            - $ref: '#/definitions/BadRequestError'
+
+  /v1/data/templates:
+    get:
+      summary: 'Получить список шаблонов для экспорта'
+      operationId: GetTemplatesList
+      parameters:
+        - type: integer
+          name: limit
+          in: query
+          required: true
+          format: int32
+          maximum: 1000
+          minimum: 0
+          description: 'Количество отдаваемых элементов.'
+        - type: integer
+          name: offset
+          in: query
+          format: int32
+          minimum: 0
+          description: 'Количество пропускаемых элементов'
+        - type: array
+          items:
+            type: string
+          name: systemQueryId
+          in: query
+          x-nullable: true
+          required: false
+          description: 'Идентификатор системного фильтра'
+      responses:
+        200:
+          description: 'Список шаблонов'
+          schema: { $ref: '#/definitions/TemplatesListResult' }
+
+    post:
+      summary: 'Сохранить описание шаблона'
+      operationId: CreateTemplate
+      parameters:
+        - name: body
+          in: body
+          description: 'Тело запроса'
+          schema: { $ref: '#/definitions/CreateTemplateCommand' }
+          required: true
+      responses:
+        201:
+          description: 'Шаблон успешно сохранен'
+          schema: { $ref: '#/definitions/CreatedResult' }
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/BadRequestError'
+
+  /v1/data/templates/{templateId}/content:
+    get:
+      summary: 'Скачать шаблон'
+      operationId: DownloadTemplateContent
+      parameters:
+        - name: templateId
+          in: path
+          type: string
+          format: uuid
+          required: true
+          description: 'Идентификатор шаблона'
+      responses:
+        200:
+          description: 'Файл с шаблона'
+          schema:
+            type: file
+            format: named-file
+        400:
+          description: 'BadRequest'
+          x-errors:
+            - $ref: '#/definitions/NotFoundError'
+
+  /v1/data/templates/{templateId}:
+    get:
+      summary: 'Получить информацию о шаблоне по идентификатору'
+      operationId: GetTemplateById
+      parameters:
+        - name: templateId
+          in: path
+          type: string
+          format: uuid
+          required: true
+          description: 'Идентификатор шаблона'
+      responses:
+        200:
+          description: 'Детальная информация о шаблоне'
+          schema: { $ref: '#/definitions/TemplateDto' }
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/NotFoundError'
+    put:
+      summary: 'Изменить детали шаблона'
+      operationId: UpdateTemplate
+      parameters:
+        - name: templateId
+          in: path
+          type: string
+          format: uuid
+          required: true
+          description: 'Идентификатор шаблона'
+        - name: body
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ChangeCommand'
+          required: true
+      responses:
+        200:
+          description: 'Детальная информация о шаблоне'
+          schema: { $ref: '#/definitions/TemplateDto' }
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/BadRequestError'
+            - $ref: '#/definitions/NotFoundError'
+            - $ref: '#/definitions/NotUniqueError'
+    delete:
+      summary: 'Удалить шаблон'
+      operationId: RemoveTemplate
+      parameters:
+        - name: templateId
+          in: path
+          type: string
+          format: uuid
+          required: true
+          description: 'Идентификатор шаблона'
+      responses:
+        204:
+          description: 'Шаблон успешно удален'
+
+  /v1/data/templates/{systemId}/system:
+    get:
+      summary: 'Получить информацию о шаблоне по системному идентификатору'
+      operationId: GetTemplateBySystemId
+      parameters:
+        - name: systemId
+          in: path
+          type: string
+          required: true
+          description: 'Системный Идентификатор шаблона'
+      responses:
+        200:
+          description: 'Детальная информация о шаблоне'
+          schema: { $ref: '#/definitions/TemplateDto' }
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/NotFoundError'
+
+  /v1/data/templates/by_filter:
+    post:
+      summary: 'Получить информацию о последнем примененном шаблоне для набора фильтров'
+      operationId: GetTemplateByFilter
+      parameters:
+        - name: body
+          in: body
+          description: 'Тело запроса'
+          schema: { $ref: '#/definitions/RawFilters' }
+          required: true
+      responses:
+        200:
+          description: 'Детальная информация о шаблоне'
+          schema: { $ref: '#/definitions/TemplateDto' }
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/NotFoundError'
+
+  /v1/data/templates/{templateId}/validate/areas:
+    post:
+      summary: 'Провести валидацию областей шаблона относительно накладываемых данных'
+      operationId: ValidateTemplateAreas
+      parameters:
+        - name: templateId
+          in: path
+          type: string
+          format: uuid
+          required: true
+          description: 'Идентификатор шаблона'
+        - name: body
+          in: body
+          description: 'Тело запроса'
+          schema: { $ref: '#/definitions/ValidateTemplateAreasCommand' }
+          required: true
+      responses:
+        200:
+          description: 'Результат валидации'
+          schema: { $ref: '#/definitions/TemplateAreasValidationResult' }
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/NotFoundError'
+
+definitions:
+  DataExportItemsParameters:
+    description: 'Параметры для экспорта любых пришедших данных'
+    allOf:
+      - $ref: '#/definitions/ExportParametersBase'
+      - type: object
+        required:
+          - items
+        properties:
+          items:
+            description: 'Коллекция словарей с данными. Где key - имя колонки в таблице, value - то, что сериализуется в ячейку'
+            type: array
+            items:
+              $ref: '#/definitions/JTokenDictionary'
+
+  DataExportFilterParameters:
+    description: 'Фильтр запроса данных'
+    allOf:
+      - $ref: '#/definitions/ExportParametersBase'
+      - type: object
+        required:
+          # В формате виджетов. Тип `WidgetByDataFilter`:
+          # https://gitlab.ptsecurity.com/MPXCoreDev/Analytics.Widgets/-/blob/develop/src/Widgets/Contracts/Microservice/Analytics.Widgets.V3.yaml as widg
+          # По сути должен заполняться как и параметр `body` в апи `api/widgets/v1/templates/preview`
+          # Поле `filter` в `widg.WidgetByDataFilter` заполняется по след. правилам:
+          # Если `DataExportFilterParameters.source` == `assets` => `widg.WidgetByDataFilter.filter` == `widg.PdqlTokenExportFilter`, а для создания задачи на экспорт - `widg.StoredFilter`
+          # `events` => `widg.WidgetByDataFilter.filter` == `SplittedFilter`, а для создания задачи на экспорт - `StoredFilter`
+          # `incidents` => `widg.WidgetByDataFilter.filter` == `widg.RawFilter.filter` (заполняется дтошкками для "старого" экспорта инцидентов - `inc.IncidentsByFilterViewModel`(экспорт всех записей по фильтру)  или `inc.IncidentsByIdsViewModel` (экспорт выделенных записей по айдишникам инцидентов)
+          # https://gitlab.ptsecurity.com/MPXCoreDev/Incidents/-/blob/release-4/src/IncidentManagement.Contracts/Contracts/Incidents.yaml as inc), а для создания задачи на экспорт - `widg.IncidentStored`
+          # `tableLists` => `widg.WidgetByDataFilter.filter` == `widg.TableListFilter`, а для создания задачи на экспорт тоже - `widg.TableListFilter`
+          - filterBody
+          # Например: "+07:00", "-09:00" итд
+          - utcOffset
+        properties:
+          filterBody:
+            description: 'Фильтр виджета по контракту оных'
+            type: object
+            additionalProperties: {}
+          utcOffset:
+            description: 'Временной сдвиг пользователя'
+            type: string
+          limit:
+            description: 'Количество записей данных (строк)'
+            type: integer
+            format: int32
+
+  DataExportMultipleFiltersParameters:
+    description: 'ДТО для запроса данных для набора фильтров'
+    allOf:
+      - $ref: '#/definitions/ExportParametersBase'
+      - type: object
+        required:
+          # В формате виджетов. Тип `WidgetByDataFilter`:
+          # https://gitlab.ptsecurity.com/MPXCoreDev/Analytics.Widgets/-/blob/develop/src/Widgets/Contracts/Microservice/Analytics.Widgets.V3.yaml as widg
+          # По сути должен заполняться как и параметр `body` в апи `api/widgets/v1/templates/preview`
+          # Поле `filter` в `widg.WidgetByDataFilter` заполняется по след. правилам:
+          # Если `DataExportFilterParameters.source` == `assets` => `widg.WidgetByDataFilter.filter` == `widg.PdqlTokenExportFilter`, а для создания задачи на экспорт - `widg.StoredFilter`
+          # `events` => `widg.WidgetByDataFilter.filter` == `SplittedFilter`, а для создания задачи на экспорт - `StoredFilter`
+          # `incidents` => `widg.WidgetByDataFilter.filter` == `widg.RawFilter.filter` (заполняется дтошкками для "старого" экспорта инцидентов - `inc.IncidentsByFilterViewModel`(экспорт всех записей по фильтру)  или `inc.IncidentsByIdsViewModel` (экспорт выделенных записей по айдишникам инцидентов)
+          # https://gitlab.ptsecurity.com/MPXCoreDev/Incidents/-/blob/release-4/src/IncidentManagement.Contracts/Contracts/Incidents.yaml as inc), а для создания задачи на экспорт - `widg.IncidentStored`
+          # `tableLists` => `widg.WidgetByDataFilter.filter` == `widg.TableListFilter`, а для создания задачи на экспорт тоже - `widg.TableListFilter`
+          - filterBody
+          # Например: "+07:00", "-09:00" итд
+          - utcOffset
+        properties:
+          filterBodies:
+            description: 'Коллекция фильтров для различных доменов по контракту оных'
+            type: array
+            items:
+              type: object
+              additionalProperties: { }
+          utcOffset:
+            description: 'Временной сдвиг пользователя'
+            type: string
+          limit:
+            description: 'Количество записей данных (строк)'
+            type: integer
+            format: int32
+
+  ExportParametersBase:
+    description: 'Базовые настройки для экспорта'
+    type: object
+    discriminator: type
+    required:
+      - source #стратегия метаэкспорта (пока просто источник)
+      - fileName
+      - fileType
+      - type
+    properties:
+      source:
+        $ref: '#/definitions/DomainSource'
+      fileName:
+        description: 'Название файла'
+        type: string
+      fileType:
+        $ref: '#/definitions/FileType'
+      type:
+        type: string
+        description: 'Дискриминатор типа'
+      templateId:
+        description: 'Идентифкатор шаблона. Признак того, что экспорт производится в шаблон.'
+        type: string
+        format: uuid
+
+  DomainSource:
+    description: 'Источник данных'
+    type: string
+    enum:
+      - assets
+      - events
+      - incidents
+      - tableLists
+
+  FileType:
+    description: 'Формат файла'
+    type: string
+    enum:
+      - json
+      - xml
+      - csv
+      - xlsx
+
+  TemplateFormat:
+    description: 'Формат шаблона'
+    type: string
+    enum:
+      - xls
+      - xlsx
+
+  JToken:
+    type: object
+    additionalProperties:
+      { }
+
+  JTokenDictionary:
+    type: object
+    additionalProperties:
+      $ref: '#/definitions/JToken'
+
+  RawFilters:
+    description: 'Транспортный объект, позволяющий передавать коллекцию фильтров разных типов'
+    discriminator: type
+    type: object
+    required:
+      - filterBodies
+      - type
+    properties:
+      filterBodies:
+        description: 'Коллекция фильтров для различных доменов по контракту оных'
+        type: array
+        items:
+            type: object
+            additionalProperties: { }
+      type:
+        type: string
+        description: 'Дискриминатор типа'
+
+  TemplateBaseDto:
+    description: 'Транспортный объект, описывающий информацию о шаблоне'
+    discriminator: type
+    type: object
+    required:
+      - name
+      - templateFormat
+      - source
+      - type
+    properties:
+      name:
+        type: string
+        description: 'Наименование шаблона'
+      description:
+        type: string
+        description: 'Детальное описание шаблона'
+      templateFormat:
+        $ref: '#/definitions/TemplateFormat'
+      source: { $ref: '#/definitions/DomainSource' }
+      type:
+        type: string
+        description: 'Дискриминатор типа'
+
+  CreateTemplateCommand:
+    description: 'Команда для сохранения шаблона'
+    allOf:
+      - { $ref: '#/definitions/TemplateBaseDto' }
+      - type: object
+        required:
+          - name
+          - templateFormat
+          - templateContent
+          - fileName
+        properties:
+          templateContent:
+            type: string
+            format: base64
+            description: 'Контент шаблона'
+          fileName:
+            type: string
+            description: 'Наименование файла шаблона'
+
+  ChangeCommand:
+    type: object
+    description: 'Базовая команда для изменения сущности'
+    discriminator: type
+    properties:
+      type:
+        type: string
+
+  SetFormatChangeCommand:
+    description: 'Команда для установки формата шаблона'
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        required:
+          - templateFormat
+        properties:
+          templateFormat:
+            $ref: '#/definitions/TemplateFormat'
+
+  SetNameChangeCommand:
+    description: 'Команда для установки наименования сущности'
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        required:
+          - name
+        properties:
+          name:
+            type: string
+            description: 'Наименование сущности'
+
+  SetDescriptionChangeCommand:
+    description: 'Команда для установки детального описания сущности'
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        required:
+          - description
+        properties:
+          description:
+            type: string
+            description: 'Детальное описание сущности'
+
+  SetSourceChangeCommand:
+    description: 'Команда для установки источника данных для сущности'
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        required:
+          - source
+        properties:
+          source:
+            $ref: '#/definitions/DomainSource'
+
+  SetContentChangeCommand:
+    description: 'Команда для установки бинарного контента сущности'
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        required:
+          - templateContent
+          - fileName
+        properties:
+          templateContent:
+            type: string
+            format: base64
+            description: 'Контент'
+          fileName:
+            type: string
+            description: 'Наименование файла'
+
+  TemplateDto:
+    description: 'Транспортный объект, описывающий информацию о шаблоне с идентифкатором шаблона'
+    allOf:
+      - $ref: '#/definitions/TemplateBaseDto'
+      - type: object
+        required:
+          - templateId
+          - fileName
+          - isSystem
+          - createdAt
+        properties:
+          templateId:
+            type: string
+            format: uuid
+            description: 'Идентификатор шаблона'
+          systemId:
+            type: string
+            description: 'Системный идентифкатор шаблона'
+          isSystem:
+            type: boolean
+            description: 'Признак того, что шаблон является встроенным в систему.'
+          systemQueryNames:
+            type: array
+            description: 'Коллекция локализованных наименований системных запросов, к которым данный шаблон является рекомендуемым'
+            items:
+              type: string
+          fileName:
+            type: string
+            description: 'Наименование файла'
+          createdAt:
+            type: string
+            format: date-time
+
+  TemplateSummaryDto:
+    description: 'Транспортный объект, описывающий информацию о шаблоне c учетом метаданных относительно применяемого фильтра'
+    allOf:
+      - $ref: '#/definitions/TemplateDto'
+      - type: object
+        properties:
+          isRecommended:
+            description: 'Признак того, что шаблон является рекомендуемым для фильтра'
+            type: boolean
+          slotsCount:
+            description: 'Количество доступных слотов под данные в шаблоне'
+            type: integer
+            format: int32
+            minimum: 0
+
+  UpdateTemplateContentMetaCommand:
+    description: 'Команда на обновление метаинформаци о контенте шаблоне'
+    type: object
+    required:
+      - fileName
+    properties:
+      fileName:
+        type: string
+        description: 'Наименование файла'
+
+  ValidateTemplateCommand:
+    description: 'Базовая команда на валидацию шаблона'
+    type: object
+    discriminator: type
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        description: 'Дискриминатор типа'
+
+  ValidateTemplateAreasCommand:
+    description: 'Команда на валидацию областей шаблона относительно накладываемых данных'
+    allOf:
+      - $ref: '#/definitions/ValidateTemplateCommand'
+      - type: object
+        required:
+        - areas
+        properties:
+          areasMetaArray:
+            type: array
+            description: 'Коллекция списков наименований колонок в шаблоне'
+            items:
+              description: 'Список наименований колонок в шаблоне'
+              type: array
+              items:
+                type: string
+
+  CreatedResult:
+    description: 'Информация об успешном создании сущности'
+    type: object
+    required: [ id ]
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: 'Идентификатор созданной сущности'
+
+  ListResult:
+    description: 'Базовый объект ответа на запрос списка сущностей'
+    type: object
+    discriminator: type
+    required:
+      - totalCount
+      - type
+    properties:
+      totalCount:
+        type: integer
+        format: int64
+        minimum: 0
+      type:
+        type: string
+        description: 'Дискриминатор типа'
+
+  TemplatesListResult:
+    description: 'Объект ответа на запрос списка шаблонов'
+    allOf:
+      - $ref: '#/definitions/ListResult'
+      - type: object
+        required:
+          - items
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/definitions/TemplateSummaryDto'
+
+  ValidationResult:
+    description: 'Общий объект ответа на запрос валидации'
+    type: object
+    discriminator: type
+    required:
+      - type
+    properties:
+      isValid:
+        description: 'Признак того, что валидация области прошла успешно'
+        type: boolean
+        default: true
+      type:
+        type: string
+        description: 'Дискриминатор типа'
+
+  TemplateAreasValidationResult:
+    description: 'Объект ответа на запрос валидации областей шаблона относительно накладываемых данных'
+    allOf:
+      - $ref: '#/definitions/ValidationResult'
+      - type: object
+        discriminator: type
+        properties:
+          unresolvedFields:
+            type: array
+            description: 'Коллекция списков наименований колонок в шаблоне'
+            items:
+              description: 'Список наименований колонок в шаблоне'
+              type: array
+              items:
+                type: string
+
+  #Errors:
+  BadRequestError:
+    x-discriminator: bad.request.error
+    type: object
+    description: 'Ошибка. Ошибка запроса'
+    allOf:
+      - $ref: '../Content/errors.json#/definitions/ValidationError'
+
+  NotFoundError:
+    x-discriminator: not.found.error
+    type: object
+    description: 'Ошибка. Объект не найден'
+    allOf:
+      - $ref: '#/definitions/BadRequestError'
+
+  NotUniqueError:
+    x-discriminator: not.unique.error
+    type: object
+    description: 'Ошибка. Неуникальное значение'
+    allOf:
+      - $ref: '#/definitions/BadRequestError'

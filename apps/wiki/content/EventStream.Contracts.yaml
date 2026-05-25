@@ -1,0 +1,124 @@
+﻿swagger: '2.0'
+info:
+  title: EventStoreApi
+  version: "1.0.0"
+  description: Контракт для получения потока событий.
+consumes:
+  - application/json
+schemes:
+  - http
+# will be prefixed to all paths
+basePath: /api/triggers/v1/eventstore
+produces:
+  - application/json
+paths:
+  /stream: 
+    get: 
+      operationId : GetEventStream
+      parameters:
+        - name: Accept
+          type: string
+          in : header
+          required: true
+        - name: checkpoint
+          type: integer
+          format: int64
+          in: query
+          required : false
+        - name: streamTypes
+          in : query
+          type: array
+          required : false
+          items:
+            type: string 
+      responses : 
+        200: 
+          schema: 
+             type: string
+             format: binary
+  /checkpoint:
+    get: 
+      operationId : GetCheckpoint
+      parameters:
+        - name: streamTypes
+          in : query
+          type: array
+          required : false
+          items:
+            type: string
+      responses : 
+        200: 
+          schema:
+            "$ref": "#/definitions/CheckpointDto"
+  /events: 
+    get: 
+      operationId : GetEvents
+      parameters:
+        - name: checkpoint
+          type: integer
+          format: int64
+          in: query
+          required : false
+        - name: streamTypes
+          in : query
+          type: array
+          required : false
+          items:
+            type: string
+        - name: limit
+          type: integer
+          format: int32
+          in: query
+          required : false
+      responses : 
+        200: 
+          schema: 
+             type: string
+             format: raw
+        400:
+          description: Bad request
+          schema:
+            type: string
+  /{streamType}/{streamId}/events: 
+    get: 
+      operationId : GetEventsForStream
+      parameters:
+        - name: streamType
+          in: path
+          required: true
+          type: string          
+        - name: streamId
+          in: path
+          required: true
+          type: string
+        - name: revision
+          type: integer
+          format: int32
+          in: query
+          required : false
+          default: 0
+        - name: limit
+          type: integer
+          format: int32
+          in: query
+          required : false
+      responses : 
+        200: 
+          schema: 
+             type: string
+             format: raw
+        400:
+          description: Bad request
+          schema:
+            type: string
+
+definitions:
+  CheckpointDto:
+    type: object
+    required:
+    - checkpoint
+    properties:
+      checkpoint:
+        type: integer
+        format: int64
+        description: Чекпоинт реки.

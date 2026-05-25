@@ -1,0 +1,97 @@
+﻿swagger: '2.0'
+info:
+  title: UserAssetCreationInfo
+  version: "1.0.0"
+  description: Контракт для информации о вводе активов пользователем.
+schemes:
+  - http
+  - https
+
+basePath: /api/assets_processing/v1/user_asset_creation_info
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /{scanId}:
+    get:
+      operationId: GetAssetCreationInfo
+      description: Получение информации о вводе актива пользователем.
+      parameters:
+        - type: string
+          name: scanId
+          in: path
+          required: true
+          format: guid
+          description: Идентификатор скана
+      responses:
+        200:
+          description: OK
+          schema:
+            "$ref": "#/definitions/AssetCreationInfoDto"
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/UserAssetCreationInfoNotFoundError'
+        503:
+          description: ServiceUnavailable
+
+  /:
+    post:
+      operationId: AddAssetCreationInfo
+      description: Добавление информации о вводе актива пользователем.
+      parameters:
+        - name: assetInfoCreation
+          in: body
+          schema:
+            "$ref": "#/definitions/AssetCreationInfoDto"
+          required: true
+      responses:
+        201:
+          description: Created
+          schema:
+            "$ref": "#/definitions/AssetCreationInfoDto"
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/SourceInvalidError'
+        503:
+          description: ServiceUnavailable
+
+definitions:
+  
+  AssetCreationInfoDto:
+    type: object
+    required:
+      - scanId
+      - source
+    properties:
+      scanId:
+        type: string
+        format: guid
+      source:
+        type: string
+        enum:
+          - undefined
+          - user
+          - import
+      initiatorId:
+        type: string
+        format: string
+      initiatorName:
+        type: string
+      correlationId:
+        type: string
+        format: guid
+        
+  SourceInvalidError:
+    description: Некорректное значение Source
+    x-discriminator: core.userAssetCreationInfo.sourceInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+        
+  UserAssetCreationInfoNotFoundError:
+    description: Не найдена запись о вводе актива пользователем
+    x-discriminator: core.userAssetCreationInfo.userAssetCreationInfoNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'

@@ -1,0 +1,666 @@
+﻿swagger: '2.0'
+info:
+  version: "1.2.0"
+  title: AssetsOperations
+  description: Контракт для выполнения операций над активами
+schemes:
+  - http
+  - https
+# will be prefixed to all paths
+basePath: /api/assets_processing/v1
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /asset_operations/removeAssets:
+    post:
+      operationId: RemoveAssets
+      description: Запустить задачу на удаление активов
+      parameters:
+        - name: removeCommand
+          in: body
+          schema:
+            $ref: '#/definitions/RemoveAssetsCommand'
+          required: true
+      responses:
+        201:
+          description: Created. Возвращаем token для получения состояния задачи
+          schema:
+            "$ref": "#/definitions/Token"
+        400:
+          description: BadRequest
+          schema:
+            $ref: '#/definitions/ErrorModel'
+        401:
+          description: Unauthorized
+        503:
+          description: ServiceUnavailable
+          x-errors:
+            - $ref: './errors.json#/definitions/ServiceUnavailableError'
+    get:
+      operationId: GetAssetsRemoveState
+      description: Получить состояние задачи по удалению активов
+      parameters:
+        - type: string
+          name: operationId
+          description: Токен запущенной задачи
+          in: query
+          required: true
+          format: guid
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/AssetsOperationResult'
+        202:
+          description: Accepted. Задача ещё выполняется
+        400:
+          description: Bad Request. Задача с таким token'ом не найдена
+
+  /asset_operations/updatePassports:
+    post:
+      operationId: UpdateAssetsPassport
+      description: Запустить задачу на обновление паспортов активов
+      parameters:
+        - name: updateInfo
+          in: body
+          schema:
+            $ref: '#/definitions/UpdateAssetsPassportCommand'
+          required: true
+      responses:
+        201:
+          description: Created. Возвращаем token для получения состояния задачи
+          schema:
+            "$ref": "#/definitions/Token"
+        400:
+          description: BadRequest
+          schema:
+            $ref: '#/definitions/ErrorModel'
+        401:
+          description: Unauthorized
+        503:
+          description: ServiceUnavailable
+          x-errors:
+            - $ref: './errors.json#/definitions/ServiceUnavailableError'
+    get:
+      operationId: GetAssetsPassportUpdateState
+      description: Получить состояние задачи по обновлению паспорта активов
+      parameters:
+        - type: string
+          description: Токен запущенной задачи
+          name: operationId
+          in: query
+          required: true
+          format: guid
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/AssetsOperationResult'
+        202:
+          description: Accepted. Задача ещё выполняется
+        400:
+          description: Bad Request. Задача с таким token'ом не найдена
+
+  /asset_operations/updatePassports/{operationId}:
+    delete:
+      operationId: AbortPassportUpdateOperation
+      description: Отменить операцию редактирования паспорта активов
+      parameters:
+        - name: operationId
+          description: Токен запущенной задачи
+          type: string
+          format: guid
+          in: path
+          required: true
+      responses:
+        202:
+          description: Accepted
+        400:
+          description: BadRequest
+
+  /asset_operations/completed/{operationType}/{operationId}:
+    put:
+      operationId: OperationCompleted
+      description: Задача выполнена
+      parameters:
+        - type: string
+          description: Токен запущенной задачи
+          name: operationId
+          in: path
+          required: true
+          format: guid
+        - type: string
+          description: Тип задачи
+          name: operationType
+          in: path
+          required: true
+          enum:
+            - unknown
+            - assetsRemove
+            - assetsPassportUpdate
+            - assetsGroupsEntriesUpdate 
+            - groupAssetsRemove
+      responses:
+        204:
+          description: No Content
+        400:
+          description: BadRequest
+
+definitions: 
+  AssetsOperationResult:
+    type: object
+    discriminator: type
+    required:
+    - type
+    - totalCount
+    - succeedCount
+    - failedCount
+    properties:
+      type:
+        type: string 
+      totalCount:
+        type: integer 
+      succeedCount:
+        type: integer 
+      failedCount:
+        type: integer 
+      errorModel:
+        description: Вся модель, чтобы UI мог общим механизмом обрабатывать ошибки
+        $ref: '#/definitions/ErrorModel'
+
+  AssetsGroupOperationResult:
+    allOf:
+      - $ref: '#/definitions/AssetsOperationResult'
+      - type: object
+        required:
+          - updatedGroups
+        properties:
+          updatedGroups:
+            type: array
+            items:
+              $ref: '#/definitions/GroupInfo'
+
+  RemoveAssetsCommand:
+    type: object
+    required:
+    - assetsIds
+    properties:
+      assetsIds:
+        type: array
+        items:
+          type: string
+          format: uuid
+
+  UpdateAssetsPassportCommand:
+    type: object
+    required:
+    - assetsIds
+    - changes
+    properties:
+      assetsIds:
+        type: array
+        items:
+          type: string
+          format: uuid
+      changes:
+        type: array
+        items:
+          $ref: '#/definitions/ChangeCommand'
+      operationId:
+        type: string
+        format: uuid
+      userId:
+        type: string
+      userName:
+        type: string
+
+  ChangeCommand:
+    type: object
+    discriminator: changeType
+    required:
+      - changeType
+    properties:
+      changeType:
+        type: string
+        
+  ChangeScanningIntervalCommand:
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        properties:
+          intervalType:
+            $ref: '#/definitions/ScanningIntervalType'
+            description: Режим сканирования
+          interval:
+            $ref: '#/definitions/ScanningInterval'
+            description: Настройки временных интервалов для данного режима сканирования. Опциональны.
+          policyRuleId:
+            description: Идентификатор правила политики, устанавливающего значение. Опционален.
+            type: string
+            format: uuid
+        required:
+          - intervalType
+        
+  ResetScanningIntervalCommand:
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        properties:
+          intervalType:
+            $ref: '#/definitions/ScanningIntervalType'
+            description: Режим сканирования
+        required:
+          - intervalType
+
+  ScanningIntervalType:
+    description: Режим сканирования
+    type: string
+    enum:
+      - unknown
+      - audit
+      - pentest
+
+  ScanningInterval:
+    type: object
+    description: Временной интервал
+    properties:
+      upToDatePeriod:
+        type: string
+        description: время с момента сканирования до которого скан считается свежим
+      obsoletePeriod:
+        type: string
+        description: время с момента сканирования после которого скан считается просроченным
+    required:
+      - upToDatePeriod
+      - obsoletePeriod
+
+  ChangeDisplayName:
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        properties:
+          value:
+            type: string
+        required:
+          - value
+
+  ChangeDescription:
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        properties:
+          value:
+            type: string
+        required:
+          - value
+
+  ChangeExpiration:
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        properties:
+          value:
+            type: boolean
+        required:
+          - value
+
+  ChangeMetadata:
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        properties:
+          value:
+            type: array
+            items:
+              $ref: '#/definitions/AssetMetadataValueModel'
+        required:
+          - value
+
+  ChangeImportance:
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        properties:
+          importanceValue:
+            $ref: '#/definitions/ImportanceValue'
+          policyRuleId:
+            description: Идентификатор правила политики, устанавливающего значение. Опционален.
+            type: string
+            format: uuid
+        required:
+          - importanceValue
+    
+  ChangeEnvironmentVectorCommand:
+    allOf:
+      - $ref: '#/definitions/ChangeCommand'
+      - type: object
+        properties:
+          vector:
+            $ref: '#/definitions/EnvironmentVector'
+            description: Вектор
+        required:
+          - vector
+
+  EnvironmentVector:
+    description: Метрики актива
+    type: object
+    required:
+      - availabilityRequirement
+      - collateralDamagePotential
+      - confidentialityRequirement
+      - integrityRequirement
+      - targetDistribution
+    properties:
+      availabilityRequirement:
+        type: string
+      collateralDamagePotential:
+        type: string
+      confidentialityRequirement:
+        type: string
+      integrityRequirement:
+        type: string
+      targetDistribution:
+        type: string
+  
+  ImportanceValue:
+    description: Допустимые значения для важности актива
+    type: string
+    enum:
+      - unknown
+      - ND
+      - L
+      - M
+      - H
+
+  ServiceOperationInitiator:
+    type: object
+    required:
+      - serviceName
+      - operationId
+      - operationType
+    properties:
+      serviceName:
+        type: string
+      operationId:
+        type: string
+      operationType:
+        type: string
+
+  AssetMetadataValueModel:
+    description: Метаданные актива
+    type: object
+    required:
+      - sourceId
+      - typeId
+    properties:
+      sourceId:
+        type: string
+      typeId:
+        type: string
+      payload:
+        type: string
+
+  ErrorModel:
+    type: object
+    required:
+      - errors
+      - message
+      - code
+    properties:
+      errors:
+        type: array
+        items:
+          $ref: '#/definitions/ErrorDto'
+      message:
+        type: string
+      code:
+        type: integer
+        format: int32
+
+  ErrorDto:
+    type: object
+    required:
+      - error
+      - source
+      - sensitive
+    properties:
+      error:
+        $ref: '#/definitions/ErrorInfo'
+      source:
+        $ref: '#/definitions/ErrorSource'
+      sensitive:
+        type: boolean
+
+  ErrorInfo:
+    type: object
+    discriminator: type
+    required:
+      - type
+    properties:
+      type:
+        type: string
+
+  ErrorSource:
+    type: object
+    required:
+      - displayName
+    properties:
+      displayName:
+        type: string
+      hostName:
+        type: string
+      ipAddresses:
+        type: array
+        items:
+          type: string
+
+  UnknownScanningIntervalTypeError:
+    x-discriminator: core.assetsInput.unknownScanningIntervalType.error
+    description: Неизвестный тип режима сканирования
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+      - type: object
+
+  InvalidScanningIntervalError:
+    x-discriminator: core.assetsInput.invalidScanningInterval.error
+    description: Невалидное или пустое значение временного интервала
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+      - type: object
+        properties:
+          value:
+            description: Невалидное значение временного интервала
+            type: string
+
+  InvalidMetadataError:
+    x-discriminator: core.assetsInput.invalidMetadata.error
+    description: Невалидное или пустое значение метаданных
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+      - type: object
+
+  ObsoleteIntervalIsLessThanUpToDateIntervalError:
+    x-discriminator: core.assetsInput.obsoleteIntervalIsLessThanUpToDateInterval.error
+    description: Значение интервала устаревания менее значания времени актуального интервала
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+      - type: object
+
+  AssetsNotExistsError:
+    x-discriminator: core.assetsOperations.assetsNotExists.error
+    description: Активы с указанными идентификаторами не существуют в системе.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  AssetsAccessForbiddenError:
+    x-discriminator: core.assetsOperations.assetsAccessForbidden.error
+    description: Доступ ко всем выбранным активам запрещен.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  GroupsNotExistsError:
+    x-discriminator: core.assetsOperations.groupsNotExists.error
+    description: Группы с указанными идентификаторами не существуют в системе.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  GroupsAccessForbiddenError:
+    x-discriminator: core.assetsOperations.groupsAccessForbidden.error
+    description: Доступ ко всем выбранным группам запрещен. 
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  AssetsRemovedError:
+    x-discriminator: core.assetsOperations.assetsRemoved.error
+    description: Все выбранные активы удалены.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  GroupsRemovedError:
+    x-discriminator: core.assetsOperations.groupsRemoved.error
+    description: Все выбранные группы удалены.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  AssetsRemovedPartlyError:
+    x-discriminator: core.assetsOperations.assetsRemovedPartly.error
+    description: Часть выбранных активов удалены.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+      - type: object
+        required:
+          - assets
+        properties:
+          assets:
+            description: Список удалённых активов
+            type: array
+            items:
+              $ref: '#/definitions/AssetInfo'
+
+  GroupsRemovedPartlyError:
+    x-discriminator: core.assetsOperations.groupsRemovedPartly.error
+    description: Часть выбранных групп удалены.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+      - type: object
+        required:
+          - groups
+        properties:
+          groups:
+            description: Список удалённых групп
+            type: array
+            items:
+              $ref: '#/definitions/GroupInfo'
+
+  GroupsAccessForbiddenPartlyError:
+    x-discriminator: core.assetsOperations.groupsAccessForbiddenPartly.error
+    description: Доступ к некоторым из выбранных групп запрещен.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+      - type: object
+        required:
+          - groups
+        properties:
+          groups:
+            description: Список недоступных групп
+            type: array
+            items:
+              $ref: '#/definitions/GroupInfo'
+
+  AssetsAccessForbiddenPartlyError:
+    x-discriminator: core.assetsOperations.assetsAccessForbiddenPartly.error
+    description: Доступ к некоторым из выбранных активов запрещен.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+      - type: object
+        required:
+          - assets
+        properties:
+          assets:
+            description: Список недоступных активов
+            type: array
+            items:
+              $ref: '#/definitions/AssetInfo'
+
+  InvalidImportanceValueError:
+    x-discriminator: core.assetsOperations.invalidImportanceValue.error
+    description: Значение метрики не валидно
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  AssetsOperationAlreadyExistsError:
+    x-discriminator: core.assetsOperations.assetsOperationAlreadyExists.error
+    description: Операция с указанным id уже существует
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  EmptyAssetsOperationUserError:
+    x-discriminator: core.assetsOperations.emptyAssetsOperationUser.error
+    description: Пустые поля UserId и UserName
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+        
+  EmptyAssetsOperationUserIdError:
+    x-discriminator: core.assetsOperations.emptyAssetsOperationUserId.error
+    description: Пустое поле UserId при заданном UserName
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+  
+  EmptyAssetsOperationUserNameError:
+    x-discriminator: core.assetsOperations.emptyAssetsOperationUserName.error
+    description: Пустое поле UserName при заданном UserId
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+  
+  AssetsOperationUserIdInUserRequestError:
+    x-discriminator: core.assetsOperations.assetsOperationUserIdInUserRequest.error
+    description: Нельзя заполнять UserId при запуске от имени пользователя
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+  
+  AssetsOperationUserInUserRequestError:
+    x-discriminator: core.assetsOperations.assetsOperationUserInUserRequest.error
+    description: Нельзя явно задавать пользоватея при запуске от имени пользователя
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+  
+  AssetsOperationUserNameInUserRequestError:
+    x-discriminator: core.assetsOperations.assetsOperationUserNameInUserRequest.error
+    description: Нельзя заполнять UserName при запуске от имени пользователя
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  AssetInfo:
+    type: object
+    required:
+      - id
+      - displayName
+    properties:
+      id:
+        type: string
+        format: uuid
+      displayName:
+        type: string
+
+  GroupInfo:
+    type: object
+    required:
+      - id
+      - displayName
+    properties:
+      id:
+        type: string
+        format: uuid
+      displayName:
+        type: string
+
+  Token:
+    type: object
+    required:
+    - operationId
+    properties:
+      operationId:
+        type: string
+        format: guid
