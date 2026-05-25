@@ -1,0 +1,65 @@
+name: MCP E2E Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  e2e:
+    name: E2E Tests (pytest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and start services
+        working-directory: infrastructure/docker-compose
+        run: docker compose up -d --build wiki-api mcp
+
+      - name: Wait for wiki-api
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5000/api/contracts > /dev/null 2>&1; then
+              echo "wiki-api is ready"
+              break
+            fi
+            echo "Waiting for wiki-api... ($i/30)"
+            sleep 2
+          done
+          curl -sf http://localhost:5000/api/contracts || (echo "wiki-api failed to start" && exit 1)
+
+      - name: Wait for mcp
+        run: |
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5200/ \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1.0"}}}')
+            if [ "$STATUS" = "200" ]; then
+              echo "mcp is ready"
+              break
+            fi
+            echo "Waiting for mcp... ($i/30), status=$STATUS"
+            sleep 2
+          done
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: tests/mcp
+        run: pip install -r requirements.txt
+
+      - name: Run E2E tests
+        working-directory: tests/mcp
+        env:
+          MCP_URL: http://localhost:5200
+        run: pytest -v
+
+      - name: Stop services
+        if: always()
+        working-directory: infrastructure/docker-compose
+        run: docker compose down
