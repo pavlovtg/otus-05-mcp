@@ -1,0 +1,154 @@
+﻿swagger: '2.0'
+info:
+  title: KnowledgeBase
+  version: 1.0.0
+  description: Контракт для получения информации о пакетах мастер-данных
+schemes: []
+consumes:
+  - application/json
+produces:
+  - application/json
+basePath: /api/assets_processing/v2/knowledgeBase
+paths:
+  
+  /packages:
+    get:
+      operationId: GetKnowledgeBasePackages
+      parameters: []
+      responses:
+        200:
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PackageShortInfoDto'
+        403:
+          description: Forbidden
+          x-errors:
+            - $ref: '#/definitions/MasterDataAccessForbiddenError'
+  
+  /packages/{packageId}:
+    get:
+      operationId: GetKnowledgeBasePackage
+      parameters:
+        - name: packageId
+          in: path
+          required: true
+          type: string
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/PackageInfoDto'
+        400:
+          description: NotFound
+          x-errors:
+            - $ref: '#/definitions/MasterDataPackageNotFoundError'
+        403:
+          description: Forbidden
+          x-errors:
+            - $ref: '#/definitions/MasterDataAccessForbiddenError'
+
+definitions:
+  PackageShortInfoDto:
+    type: object
+    properties:
+      packageId:
+        type: string
+      status:
+        $ref: '#/definitions/PackageStatus'
+      name:
+        type: string
+      version:
+        type: string
+      lastUpdate:
+        type: string
+        format: date-time
+    required:
+      - packageId
+      - status
+      - name
+      - version
+  
+  PackageInfoDto:
+    type: object
+    properties:
+      packageId:
+        type: string
+      status:
+        $ref: '#/definitions/PackageStatus'
+      name:
+        type: string
+      version:
+        type: string
+      lastUpdate:
+        type: string
+        format: date-time
+      lastRecalculation:
+        type: string
+        format: date-time
+    required:
+      - packageId
+      - status
+      - name
+      - version
+  
+  PackageStatus:
+    description: Статус пакета
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+    discriminator: type
+  
+  SuccessStatus:
+    description: Успешная установка
+    allOf:
+      - $ref: '#/definitions/PackageStatus'
+      - type: object
+  
+  FailedStatus:
+    description: Ошибка пакета
+    allOf:
+      - $ref: '#/definitions/PackageStatus'
+      - type: object
+    required:
+      - error
+    properties:
+      error:
+        $ref: '#/definitions/PackageError'
+  
+  InstallingStatus:
+    description: Установка пакета
+    allOf:
+      - $ref: '#/definitions/PackageStatus'
+      - type: object
+  
+  VulnerabilitiesRecalculatingStatus:
+    description: Пересчёт уязвимостей
+    allOf:
+      - $ref: '#/definitions/PackageStatus'
+      - type: object
+  
+  PackageError:
+    type: string
+    description: Ошибка пакета
+    enum:
+      - unknown
+      - packageCorrupted
+  
+  MasterDataAccessForbiddenError:
+    description: Нет доступа к мастер данным (остутствует лицензия)
+    x-discriminator: core.knowledgeBase.masterDataAccessForbidden.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        
+  MasterDataPackageNotFoundError:
+    description: Пакет не найден
+    x-discriminator: core.knowledgeBase.masterDataPackageNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object

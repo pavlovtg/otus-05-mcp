@@ -1,0 +1,309 @@
+﻿swagger: '2.0'
+info:
+  title: MasterDataEventStoreApiV2
+  version: "2.0.0"
+  description: Контракт для получения потока событий мастер данных с возможностью их фильтрации.
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /api/assets_processing/v2/masterdata/eventstore
+produces:
+  - application/json
+paths:
+  /stream/filter: 
+    post: 
+      operationId : CreateFilter
+      parameters:
+        - name: filter
+          in: body
+          schema:
+            $ref: '#/definitions/FilterDto'
+          required: true
+      responses : 
+        200:
+          description: Ok. Return filterId to filter streams and events
+          schema: 
+             type: string
+             format: uuid
+
+  /stream: 
+    get: 
+      operationId : GetMasterDataEventStream
+      parameters:
+        - name: Accept
+          type: string
+          in : header
+          required: true
+        - name: checkpoint
+          type: integer
+          format: int64
+          in: query
+          required : false
+        - name: filterId
+          in: query
+          type: string
+          format: uuid
+          required: false
+      responses : 
+        200:
+          description: Ok
+          schema: 
+             type: string
+             format: binary
+        400:
+          description: Bad request.
+          schema:
+            $ref: '#/definitions/ErrorModel'
+
+  /{streamType}/{streamId}/commits:
+    get:
+      operationId : GetCommitsByStream
+      parameters:
+        - name: streamType
+          description: Имя типа агрегата
+          in: path
+          required: true
+          type: string
+        - name: streamId
+          description: Идентификатор агрегата
+          in: path
+          required: true
+          type: integer
+          format: int64
+        - name: revisionFrom
+          description: Номер начальной версии агрегата. По умолчанию равен 0 (самая первая версия агрегата).
+          type: integer
+          format: int32
+          in: query
+          required : false
+          default: 0
+        - name: revisionTo
+          description: Номер финальной версии агрегата. Не может быть меньше revisionFrom. По умолчанию равен Int.MaxValue (последняя версия агрегата).
+          type: integer
+          format: int32
+          in: query
+          required : false
+          default: 2147483647
+      responses :
+        200:
+          description: Ok
+          schema:
+            type: string
+            format: binary
+        400:
+          description: Bad request.
+          schema:
+            $ref: '#/definitions/ErrorModel'
+
+  /checkpoint:
+    get: 
+      operationId : GetCheckpoint
+      parameters:
+        - name: streamTypes
+          in : query
+          type: array
+          required : false
+          items:
+            type: string
+      responses : 
+        200:
+          description: Ok
+          schema:
+            "$ref": "#/definitions/CheckpointDto"
+
+  /events: 
+    get: 
+      operationId : GetEvents
+      parameters:
+        - name: checkpoint
+          type: integer
+          format: int64
+          in: query
+          required : false
+        - name: filterId
+          in: query
+          type: string
+          format: uuid
+          required : false
+        - name: limit
+          type: integer
+          format: int32
+          in: query
+          required : false
+      responses : 
+        200:
+          description: Ok
+          schema: 
+             type: string
+             format: raw
+        400:
+          description: Bad request.
+          schema:
+            $ref: '#/definitions/ErrorModel'
+
+  /{streamType}/{streamId}/events: 
+    get: 
+      operationId : GetEventsForStream
+      parameters:
+        - name: streamType
+          in: path
+          required: true
+          type: string
+        - name: streamId
+          in: path
+          required: true
+          type: integer
+          format: int64
+        - name: revision
+          type: integer
+          format: int32
+          in: query
+          required : false
+          default: 0
+        - name: limit
+          type: integer
+          format: int32
+          in: query
+          required : false
+      responses : 
+        200:
+          description: Ok
+          schema: 
+             type: string
+             format: raw
+        400:
+          description: Bad request
+          schema:
+            type: string
+
+  /events/{checkpoint}:
+    get:
+      operationId : GetEventsForCommit
+      parameters:
+        - name: checkpoint
+          type: integer
+          format: int64
+          in: path
+          required: true
+      responses :
+        200:
+          schema:
+            type: string
+            format: raw
+        400:
+          description: Bad request
+          schema:
+            type: string
+
+definitions:
+  CheckpointDto:
+    type: object
+    required:
+    - checkpoint
+    properties:
+      checkpoint:
+        type: integer
+        format: int64
+        description: Чекпоинт реки.
+
+  FilterDto:
+    type: object
+    properties:
+      streamTypes:
+        type: array
+        items:
+          type: string
+      eventTypes:
+        type: array
+        items:
+          type: string
+
+  ErrorModel:
+    type: object
+    required:
+      - errors
+      - message
+      - code
+    properties:
+      errors:
+        type: array
+        items:
+          $ref: '#/definitions/ErrorDto'
+      message:
+        type: string
+      code:
+        type: integer
+        format: int32
+
+  ErrorDto:
+    type: object
+    required:
+      - error
+      - source
+      - sensitive
+    properties:
+      error:
+        $ref: '#/definitions/ErrorInfo'
+      source:
+        $ref: '#/definitions/ErrorSource'
+      sensitive:
+        type: boolean
+
+  ErrorInfo:
+    type: object
+    discriminator: type
+    required:
+      - type
+    properties:
+      type:
+        type: string
+
+  ErrorSource:
+    type: object
+    required:
+      - displayName
+    properties:
+      displayName:
+        type: string
+      hostName:
+        type: string
+      ipAddresses:
+        type: array
+        items:
+          type: string
+
+  FilterNotExistsError:
+    x-discriminator: core.assetsEventsStream.filterNotExists.error
+    description: Filter with specified id not exist.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  InvalidLimitValueError:
+    x-discriminator: core.assetsEventsStream.invalidLimitValue.error
+    description: Limit must be greater than zero and les than 100
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  InvalidCheckpointValueError:
+    x-discriminator: core.assetsEventsStream.invalidCheckpointValue.error
+    description: Checkpoint must be greater or equal than zero
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  InvalidRevisionFromValueError:
+    x-discriminator: core.assetsEventsStream.invalidRevisionFromValue.error
+    description: RevisionFrom must be greater or equal than zero
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  InvalidRevisionToValueError:
+    x-discriminator: core.assetsEventsStream.invalidRevisionToValue.error
+    description: RevisionTo must be greater or equal than zero
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'
+
+  RevisionToLessThanRevisionFromError:
+    x-discriminator: core.assetsEventsStream.revisionToLessThanRevisionFromValue.error
+    description: revisionTo must be greater or equal revisionFrom.
+    allOf:
+      - $ref: '#/definitions/ErrorInfo'

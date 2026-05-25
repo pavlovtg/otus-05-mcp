@@ -1,0 +1,221 @@
+﻿swagger: '2.0'
+info:
+  title: MasterData
+  version: 1.0.0
+  description: Контракт для получения справочной информации по уязвимостям.
+schemes: []
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /api/masterData/vulners:
+    post:
+      tags:
+        - MasterDataPublic
+      operationId: GetVulnerabilities
+      parameters:
+        - name: vulnerIds
+          in: body
+          schema:
+            type: array
+            items:
+              type: string
+              format: guid
+          x-nullable: true
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/VulnerabilityDto'
+          x-nullable: true
+  /api/masterData/identifiers:
+    post:
+      tags:
+        - MasterDataPublic
+      operationId: GetVulnerabilityIdentifiers
+      parameters:
+        - name: vulnerIds
+          in: body
+          schema:
+            type: array
+            items:
+              type: string
+              format: guid
+          x-nullable: true
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/VulnerabilityIdentifierDto'
+          x-nullable: true
+  /api/masterData/baseMetrics:
+    post:
+      tags:
+        - MasterDataPublic
+      operationId: GetVulnerabilityBaseMetrics
+      parameters:
+        - name: vulnerIds
+          in: body
+          schema:
+            type: array
+            items:
+              type: string
+              format: guid
+          x-nullable: true
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BaseMetricsDto'
+          x-nullable: true
+  /api/masterData/temporalMetrics:
+    post:
+      tags:
+        - MasterDataPublic
+      operationId: GetVulnerabilityTemporalMetrics
+      parameters:
+        - name: vulnerIds
+          in: body
+          schema:
+            type: array
+            items:
+              type: string
+              format: guid
+          x-nullable: true
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TemporalMetricsDto'
+          x-nullable: true
+  /api/masterData/vulnerLinks:
+    post:
+      tags:
+        - MasterDataPublic
+      operationId: GetVulnerabilityLinks
+      parameters:
+        - name: vulnerIds
+          in: body
+          schema:
+            type: array
+            items:
+              type: string
+              format: guid
+          x-nullable: true
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/VulnerabilityLinkDto'
+          x-nullable: true    
+              
+definitions:
+  VulnerabilityDto:
+    type: object
+    required:
+      - vulnerabilityId
+      - level
+    properties:
+      vulnerabilityId:
+        type: string
+        format: guid
+      title:
+        type: string
+      description:
+        type: string
+      shortDescription:
+        type: string
+      howToFix:
+        type: string
+      level:
+        type: integer
+        format: int32
+
+  VulnerabilityIdentifierDto:
+    type: object
+    required:
+      - vulnerabilityId
+      - classId
+    properties:
+      vulnerabilityId:
+        type: string
+        format: guid
+      classId:
+        type: string
+        format: guid
+      url:
+        type: string
+      value:
+        type: string
+
+  BaseMetricsDto:
+    type: object
+    required:
+      - vulnerabilityId
+      - score
+    properties:
+      vulnerabilityId:
+        type: string
+        format: guid
+      accessVector:
+        type: string
+      accessComplexity:
+        type: string
+      authentication:
+        type: string
+      availabilityImpact:
+        type: string
+      confidentialityImpact:
+        type: string
+      integrityImpact:
+        type: string
+      score:
+        type: number
+        format: decimal
+
+  TemporalMetricsDto:
+    type: object
+    required:
+      - vulnerabilityId
+      - score
+    properties:
+      vulnerabilityId:
+        type: string
+        format: guid
+      exploitability:
+        type: string
+      remediationLevel:
+        type: string
+      reportConfidence:
+        type: string
+      score:
+        type: number
+        format: decimal
+
+  VulnerabilityLinkDto:
+    type: object
+    required:
+      - vulnerabilityId
+    properties:
+      vulnerabilityId:
+        type: string
+        format: guid
+      linkUrl:
+        type: string
+      comment:
+        type: string    
+
+parameters: {}
+responses: {}
+securityDefinitions: {}

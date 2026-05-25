@@ -1,0 +1,69 @@
+﻿swagger: '2.0'
+info:
+  title: TimeZones
+  version: '1.0'
+  description: Контракт для получения информации по временным зонам.
+schemes: []
+consumes:
+  - application/json
+basePath: /api/triggers/v1
+produces:
+  - application/json
+paths:
+  /time_zones:
+    get:
+      operationId: GetTimeZones
+      description: Возвращает список таймзон, доступных на сервере
+      parameters: []
+      responses:
+        200:
+          description: Список таймзон.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PrimaryTimeZoneDto'
+
+definitions:
+  TimeZoneDto:
+    type: object
+    discriminator: type
+    description: Таймзона.
+    required:
+      - id
+      - type
+    properties:
+      id:
+        description: IANA-идентификатор таймзоны.
+        type: string
+      city:
+        description: Город таймзоны (локализованный).
+        type: string
+      countryCode:
+        description: Код страны.
+        type: string
+      countryName:
+        description: Название страны (локализованное).
+        type: string
+      type:
+        type : string
+        description: Имя типа конкретного класса
+
+  PrimaryTimeZoneDto:
+    type: object
+    description: Основная таймзона.
+    required:
+      - offset
+      - associatedZones
+    allOf:
+      - $ref: '#/definitions/TimeZoneDto'
+      - type: object
+        properties:
+          offset:
+            description: Смещение времени для таймзоны.
+            type: string
+            format: time-span
+          associatedZones:
+            description: Список ассоциированных таймзон для поиска и составлении локализованного имени. 
+            type: array
+            items:
+              $ref: '#/definitions/TimeZoneDto'

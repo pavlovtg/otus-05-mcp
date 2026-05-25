@@ -1,0 +1,70 @@
+{
+"definitions": {
+        "Error": {
+            "type": "object",
+            "discriminator": "type",
+            "properties": {
+                "type": { "type": "string" }
+            },
+            "required": [
+                "type"
+            ]
+        },
+        "ApiCallError": {
+            "allOf": [
+                { "$ref": "#/definitions/Error" },
+                {
+                    "type": "object",
+                    "properties": {
+                        "uri": { "type": "string" },
+                        "code": { "type": "integer" },
+                        "message": { "type": "string" }
+                    }
+                }
+            ]
+        },
+        "ForbiddenError": {
+            "allOf": [
+                { "$ref": "#/definitions/Error" }
+            ]
+        },
+        "InternalError": {
+            "allOf": [
+                { "$ref": "#/definitions/Error" },
+                {
+                    "type": "object",
+                    "properties": {
+                        "message": { "type": "string" }
+                    }
+                }
+            ]
+        },
+
+        "ServiceUnavailableError": {
+            "allOf": [
+                { "$ref": "#/definitions/Error" },
+                {
+                    "type": "object",
+                    "properties": {
+                        "serverAddress": { "type": "string" },
+                        "message": { "type": "string" }
+
+                    }
+                }
+            ]
+        },
+        "ValidationError": {
+            "allOf": [
+                { "$ref": "#/definitions/Error" },
+                {
+                    "type": "object",
+                    "properties": {
+                        "message": { "type": "string" }
+
+                    }
+                }
+            ]
+        }
+
+    }
+}

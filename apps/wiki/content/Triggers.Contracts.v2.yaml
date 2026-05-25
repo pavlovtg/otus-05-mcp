@@ -1,0 +1,1270 @@
+﻿swagger: '2.0'
+info:
+  title: Triggersv2
+  version: '2.0'
+  description: Контракт для управления триггерами.
+schemes: []
+consumes:
+  - application/json
+basePath: /api/triggers/v2
+produces:
+  - application/json
+paths:
+  /triggers:
+    get:
+      operationId: GetTriggers
+      description: Возвращает список триггеров
+      parameters:
+        - description: 'Типы метатригеров, которые будут включены в выборку. Если не указано - то все.'
+          type: array
+          items:
+            type: string
+          name: metatype
+          in: query
+          required: false
+        - type: integer
+          description: Указавыет ограничение количества возвращаемых триггеров.
+          name: limit
+          in: query
+          required: false
+          format: int32
+        - type: integer
+          description: Указавыет смещение от начала выборки для возвращаемых триггеров.
+          name: offset
+          in: query
+          required: false
+          format: int32
+      responses:
+        200:
+          description: Список триггеров.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TriggerDto'
+    post:
+      operationId: CreateTrigger
+      description: Создает новый триггер.
+      parameters:
+        - name: CreateTriggerCommand
+          description: Команда создания триггера.
+          in: body
+          schema:
+            $ref: '#/definitions/CreateTriggerCommand'
+      responses:
+        400:
+          description: Указаны неверные параметры
+          x-errors:
+            - $ref: '#/definitions/NameNotSpecifiedError'
+            - $ref: '#/definitions/NameNotUniqueError'
+            - $ref: '#/definitions/MetatypeNotSpecifiedError'
+            - $ref: '#/definitions/MetatypeUnknownError'
+            - $ref: '#/definitions/ParametersPayloadNotSpecified'
+            - $ref: '#/definitions/ExternalServiceUnavailableError'
+            - $ref: '#/definitions/ParametersPayloadInvalidError'
+            - $ref: '#/definitions/TimezoneInvalidError'
+            - $ref: '#/definitions/TimezoneOffsetInvalidError'
+            - $ref: '#/definitions/TimezoneAndTimeZoneOffsetNotSpecifiedError'
+            - $ref: '#/definitions/SchedulingParametersNotSpecifiedError'
+            - $ref: '#/definitions/PeriodicityTypeUnknownError'
+            - $ref: '#/definitions/DateToLessThanDateFromError'
+            - $ref: '#/definitions/RepeatIntervalNotSpecifiedError'
+            - $ref: '#/definitions/RepeatIntervalLessThanMinuteError'
+            - $ref: '#/definitions/RepeatIntervalHasSecondsError'
+            - $ref: '#/definitions/RepeatIntervalExceedsLimitError'
+            - $ref: '#/definitions/DaysOfWeekNotSpecifiedError'
+            - $ref: '#/definitions/DaysOfWeekInvalidError'
+            - $ref: '#/definitions/DaysOfMonthNotSpecifiedError'
+            - $ref: '#/definitions/DaysOfMonthInvalidError'
+            - $ref: '#/definitions/SchedulingParametersNeverFireError'
+            - $ref: '#/definitions/ReactionsNotSpecifiedError'
+            - $ref: '#/definitions/ReactionTypeUnknownError'
+            - $ref: '#/definitions/EmailParticipantNotSpecifiedError'
+            - $ref: '#/definitions/EmailParticipantTypeUnknownError'
+            - $ref: '#/definitions/WebHookUrlNotSpecifiedError'
+            - $ref: '#/definitions/WebHookUrlDuplicatedError'
+            - $ref: '#/definitions/WebHookUriInvalidError'
+            - $ref: '#/definitions/InvalidTriggerActivationError'
+            - $ref: '#/definitions/ReactionNotAllowedError'
+            - $ref: '#/definitions/FireAtTimeExceedsLimitError'
+            - $ref: '#/definitions/EmailFormatInvalidError'
+            - $ref: '#/definitions/InvalidInputDataFormatError'
+            - $ref: '#/definitions/RecurrenceInvalidError'
+            - $ref: '#/definitions/RecurrenceRangeInvalidError'
+            - $ref: '#/definitions/CronExpressionInvalidError'
+        201:
+          description: Триггер успешно создан.
+          schema:
+            $ref: '#/definitions/CreatedTriggerResultDto'
+        503:
+          description: ServiceUnavailable
+  /triggers/{triggerId}:
+    get:
+      operationId: GetTriggerById
+      description: Возвращает описание триггера по идентифкатору.
+      parameters:
+        - type: string
+          description: Идентификатор триггера.
+          name: triggerId
+          in: path
+          required: true
+          format: guid
+      responses:
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/TriggerNotFoundError'
+        200:
+          description: Описание тригера.
+          schema:
+            $ref: '#/definitions/TriggerDto'
+    delete:
+      operationId: RemoveTriggerById
+      description: Удаляет триггер.
+      parameters:
+        - type: string
+          description: Идентификатор триггера.
+          name: triggerId
+          in: path
+          required: true
+          format: guid
+      responses:
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/TriggerNotFoundError'
+        204:
+          description: Триггер успешно удален.
+    put:
+      description: Обновляет указанный триггер.
+      operationId: UpdateTriggerCommand
+      parameters:
+        - type: string
+          name: triggerId
+          description: Идентификатор триггера.
+          in: path
+          required: true
+          format: guid
+        - name: triggerDto
+          description: Команда обновления триггера.
+          in: body
+          schema:
+            $ref: '#/definitions/UpdateTriggerCommand'
+      responses:
+        400:
+          description: Указаны неверные параметры
+          x-errors:
+            - $ref: '#/definitions/NameNotSpecifiedError'
+            - $ref: '#/definitions/NameNotUniqueError'
+            - $ref: '#/definitions/MetatypeNotSpecifiedError'
+            - $ref: '#/definitions/MetatypeUnknownError'
+            - $ref: '#/definitions/ParametersPayloadNotSpecified'
+            - $ref: '#/definitions/ExternalServiceUnavailableError'
+            - $ref: '#/definitions/ParametersPayloadInvalidError'
+            - $ref: '#/definitions/TimezoneInvalidError'
+            - $ref: '#/definitions/TimezoneOffsetInvalidError'
+            - $ref: '#/definitions/TimezoneAndTimeZoneOffsetNotSpecifiedError'
+            - $ref: '#/definitions/SchedulingParametersNotSpecifiedError'
+            - $ref: '#/definitions/PeriodicityTypeUnknownError'
+            - $ref: '#/definitions/DateToLessThanDateFromError'
+            - $ref: '#/definitions/RepeatIntervalNotSpecifiedError'
+            - $ref: '#/definitions/RepeatIntervalLessThanMinuteError'
+            - $ref: '#/definitions/RepeatIntervalHasSecondsError'
+            - $ref: '#/definitions/RepeatIntervalExceedsLimitError'
+            - $ref: '#/definitions/DaysOfWeekNotSpecifiedError'
+            - $ref: '#/definitions/DaysOfWeekInvalidError'
+            - $ref: '#/definitions/DaysOfMonthNotSpecifiedError'
+            - $ref: '#/definitions/DaysOfMonthInvalidError'
+            - $ref: '#/definitions/SchedulingParametersNeverFireError'
+            - $ref: '#/definitions/ReactionsNotSpecifiedError'
+            - $ref: '#/definitions/ReactionTypeUnknownError'
+            - $ref: '#/definitions/EmailParticipantNotSpecifiedError'
+            - $ref: '#/definitions/EmailParticipantTypeUnknownError'
+            - $ref: '#/definitions/WebHookUrlNotSpecifiedError'
+            - $ref: '#/definitions/WebHookUrlDuplicatedError'
+            - $ref: '#/definitions/WebHookUriInvalidError'
+            - $ref: '#/definitions/MetatypeChangeForbiddenError'
+            - $ref: '#/definitions/TriggerNotFoundError'
+            - $ref: '#/definitions/ReactionNotAllowedError'
+            - $ref: '#/definitions/FireAtTimeExceedsLimitError'
+            - $ref: '#/definitions/EmailFormatInvalidError'
+            - $ref: '#/definitions/InvalidInputDataFormatError'
+            - $ref: '#/definitions/RecurrenceInvalidError'
+            - $ref: '#/definitions/RecurrenceRangeInvalidError'
+            - $ref: '#/definitions/CronExpressionInvalidError'
+        204:
+          description: Триггер обновлен.
+        503:
+          description: ServiceUnavailable
+  /triggers/{triggerId}/activate:
+    post:
+      operationId: ActivateTrigger
+      parameters:
+        - type: string
+          description: Идентификатор триггера.
+          name: triggerId
+          in: path
+          required: true
+          format: guid
+      responses:
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/TriggerNotFoundError'
+            - $ref: '#/definitions/InvalidTriggerActivationError'
+            - $ref: '#/definitions/ReactionsNotSpecifiedError'
+        204:
+          description: Триггер активирован.
+  /triggers/{triggerId}/deactivate:
+    post:
+      operationId: DectivateTrigger
+      parameters:
+        - type: string
+          description: Идентификатор триггера.
+          name: triggerId
+          in: path
+          required: true
+          format: guid
+      responses:
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/TriggerNotFoundError'
+        204:
+          description: Триггер деактивирован.
+  /triggers/scheduling_parameters/validate:
+    post:
+      operationId: ValidateSchedulingParameters
+      parameters:
+        - name: ValidateSchedulingParametersCommand
+          description: Команда проверки валидности параметров планировщика.
+          in: body
+          schema:
+            $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      responses:
+        400:
+          description: Указаны неверные параметры
+          x-errors:
+            - $ref: '#/definitions/TimezoneInvalidError'
+            - $ref: '#/definitions/TimezoneOffsetInvalidError'
+            - $ref: '#/definitions/TimezoneAndTimeZoneOffsetNotSpecifiedError'
+            - $ref: '#/definitions/PeriodicityTypeUnknownError'
+            - $ref: '#/definitions/DateToLessThanDateFromError'
+            - $ref: '#/definitions/RepeatIntervalNotSpecifiedError'
+            - $ref: '#/definitions/RepeatIntervalLessThanMinuteError'
+            - $ref: '#/definitions/RepeatIntervalHasSecondsError'
+            - $ref: '#/definitions/RepeatIntervalExceedsLimitError'
+            - $ref: '#/definitions/DaysOfWeekNotSpecifiedError'
+            - $ref: '#/definitions/DaysOfWeekInvalidError'
+            - $ref: '#/definitions/DaysOfMonthNotSpecifiedError'
+            - $ref: '#/definitions/DaysOfMonthInvalidError'
+            - $ref: '#/definitions/SchedulingParametersNeverFireError'
+            - $ref: '#/definitions/FireAtTimeExceedsLimitError'
+            - $ref: '#/definitions/RecurrenceInvalidError'
+            - $ref: '#/definitions/RecurrenceRangeInvalidError'
+            - $ref: '#/definitions/CronExpressionInvalidError'
+        200:
+          description: Параметры планировщика валидны.
+  
+  /triggers/scheduling_parameters/calc_next_fires:
+    post:
+      operationId: CalcNextFires
+      parameters:
+        - name: calcNextFiresCommand
+          description: Команда с параметрами планировщика
+          in: body
+          schema:
+            $ref: '#/definitions/CalcNextFiresCommandDto'
+      responses:
+        400:
+          description: Указаны неверные параметры
+          x-errors:
+            - $ref: '#/definitions/TimezoneInvalidError'
+            - $ref: '#/definitions/TimezoneOffsetInvalidError'
+            - $ref: '#/definitions/TimezoneAndTimeZoneOffsetNotSpecifiedError'
+            - $ref: '#/definitions/PeriodicityTypeUnknownError'
+            - $ref: '#/definitions/DateToLessThanDateFromError'
+            - $ref: '#/definitions/RepeatIntervalNotSpecifiedError'
+            - $ref: '#/definitions/RepeatIntervalLessThanMinuteError'
+            - $ref: '#/definitions/RepeatIntervalHasSecondsError'
+            - $ref: '#/definitions/RepeatIntervalExceedsLimitError'
+            - $ref: '#/definitions/DaysOfWeekNotSpecifiedError'
+            - $ref: '#/definitions/DaysOfWeekInvalidError'
+            - $ref: '#/definitions/DaysOfMonthNotSpecifiedError'
+            - $ref: '#/definitions/DaysOfMonthInvalidError'
+            - $ref: '#/definitions/SchedulingParametersNeverFireError'
+            - $ref: '#/definitions/FireAtTimeExceedsLimitError'
+            - $ref: '#/definitions/RecurrenceInvalidError'
+            - $ref: '#/definitions/RecurrenceRangeInvalidError'
+            - $ref: '#/definitions/CronExpressionInvalidError'
+        200:
+          description: Список следующих запусков
+          schema:
+            $ref: '#/definitions/CalcNextFiresResponseDto'
+
+  /triggers/reaction/webhook/check:
+    post:
+      operationId: CheckWebHookReaction
+      parameters:
+        - name: checkWebHookReactionCommand
+          description: Команда для проверки настроек web hook reaction путем отправки тестового сообщения.
+          in: body
+          schema:
+            $ref: '#/definitions/CheckWebHookReactionCommandDto'
+      responses:
+        200:
+          description: Отправка тестового web hook выполнена.
+          schema:
+            $ref: '#/definitions/WebHookCheckHttpCodeResultDto'
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/WebHookCheckTimedoutError'
+            - $ref: '#/definitions/WebHookCheckInvalidHttpCodeError'
+            - $ref: '#/definitions/WebHookCheckSslCheckFailedError'
+            - $ref: '#/definitions/WebHookConnectionFailedError'
+            - $ref: '#/definitions/WebHookUnknownMetaTypeError'
+            - $ref: '#/definitions/WebHookUriInvalidError'
+
+definitions:
+
+  CheckWebHookReactionCommandDto:
+    type: object
+    description: Команда для проверки отправки web hook уведомлений.
+    properties:
+      url:
+        type: string
+        description: адрес получения web hook.
+      metaType:
+        type: string
+        description: Id выбранного пользователем метатриггера.
+      checkSsl:
+        type: boolean
+        description: Проверять SSL при подключении через HTTPS.
+        default: false
+    required:
+      - url
+      - metaType
+
+  WebHookCheckHttpCodeResultDto:
+    type: object
+    properties:
+      statusCode:
+        type: string
+        description: HTTP Status code возвращенный потребителем web hook уведомлений.
+    required:
+        - statusCode
+
+  CreatedTriggerResultDto:
+    type: object
+    description: Результат применения команды создания триггера.
+    required:
+      - id
+    properties:
+      id:
+        description: Уникальный идентификатор.
+        type: string
+        format: guid
+      creationStatus:
+        description: Если задан commandId и данная команда была обратана ранее вернется - exists, иначе created.
+        $ref: '#/definitions/TriggerCreationStatus'
+
+  TriggerCreationStatus:
+    type: string
+    description: статус создания триггера.
+    enum:
+      - undefined
+      - created
+      - exists
+
+  TriggerDto:
+    type: object
+    description: Описание триггера.
+    required:
+      - id
+      - name
+      - metaType
+      - status
+      - lastUpdate
+      - reactions
+      - schedulingParameters
+    properties:
+      id:
+        description: Уникальный идентификатор.
+        type: string
+        format: guid
+      name:
+        description: Наименование.
+        type: string
+      description:
+        description: Описание.
+        type: string
+      metaType:
+        description: Мета-тип.
+        type: string
+      status:
+        description: Статус.
+        $ref: '#/definitions/TriggerStatus'
+      authorId:
+        description: Идентификатор создателя.
+        type: string
+      created:
+        description: Время создания триггера.
+        type: string
+        format: date-time
+      lastUpdate:
+        description: Время последнего обновления.
+        type: string
+        format: date-time
+      lastFired:
+        description: Время последнего срабатывания триггера. Внимание. Не эквивалентно времени последней отправки уведомления. Опционально.
+        type: string
+        format: date-time
+      renderedParametersPayload:
+        description: Отрендеренные параметры триггера, содержащие DisplayNames и прочую инфу для отображения пользователю. Формат объекта согласовывается с конкретным сервисом-потребителем функционала триггеров.
+          Могут быть null, в случае рендеринг параметров не удался.
+        type: object
+        additionalProperties: {}
+      reactions:
+        description: Реакции.
+        type: array
+        items:
+          $ref: '#/definitions/ReactionDto'
+      parameters:
+        description: Параметры срабатывания.
+        $ref: '#/definitions/TriggerParametersDto'
+      timeZoneId:
+        type: string
+        description: IANA-идентификатор таймзоны триггера для отображения дат в уведомлении.
+  CreateTriggerCommand:
+    type: object
+    description: Команда на создание триггера.
+    required:
+      - name      
+      - metaType
+      - parametersPayload
+      - reactions
+      - parameters
+    properties:
+      name:
+        description: Наименование.
+        type: string
+      commandId:
+        description: Идентификатор команды.
+        type: string
+      description:
+        description: Описание.
+        type: string
+      metaType:
+        description: Мета-тип.
+        type: string
+      parametersPayload:
+        description: Параметры триггера. Формат объекта согласовывается с конкретным сервисом-потребителем функционала триггеров.      
+        type: object
+        additionalProperties: {}
+      reactions:
+        description: Реакции.
+        type: array
+        items:
+          $ref: '#/definitions/ReactionDto'
+      parameters:
+        description: Параметры срабатывания.
+        $ref: '#/definitions/TriggerParametersDto'
+      timeZoneId:
+        type: string
+        description: IANA-идентификатор таймзоны триггера для отображения дат в уведомлении.
+  UpdateTriggerCommand:
+    type: object
+    description: Команда на обновление триггера.
+    required:
+      - name      
+      - parametersPayload
+      - reactions
+      - parameters
+    properties:
+      name:
+        description: Наименование.
+        type: string
+      description:
+        description: Описание.
+        type: string
+      parametersPayload:
+        description: Параметры триггера. Формат объекта согласовывается с конкретным сервисом-потребителем функционала триггеров.             
+        type: object
+        additionalProperties: {}
+      reactions:
+        description: Реакции.
+        type: array
+        items:
+          $ref: '#/definitions/ReactionDto'
+      parameters:
+        description: Параметры срабатывания.
+        $ref: '#/definitions/TriggerParametersDto'
+      timeZoneId:
+        type: string
+        description: IANA-идентификатор таймзоны триггера для отображения дат в уведомлении.
+  ReactionDto:
+    type: object
+    discriminator: type
+    description: Реакция на срабатывание.
+    required:
+      - type
+    properties:
+      type:
+        type: string
+  EmailNotification:
+    type: object
+    description: Реакция на срабатывание - отправка письма по e-mail.
+    allOf:
+      - $ref: '#/definitions/ReactionDto'
+      - type: object
+        properties:
+          participants:
+            type: array
+            description: Получатели письмем с данными. 
+            items:
+              $ref: '#/definitions/ParticipantDto'
+        required:
+         - participants
+  WebHook:
+    type: object
+    description: Реакция на срабатывание - http post запрос.
+    allOf:
+      - $ref: '#/definitions/ReactionDto'
+      - type: object
+        properties:
+          uri:
+            type: string
+            description: Uri для отправки post-запроса.
+          checkSsl:
+            type: boolean
+            description: Проверять SSL при отправке web hook уведомления через HTTPS соединение.
+            default: false
+        required:
+          - uri
+  ParticipantDto:
+    type: object
+    description: Получатель письма.
+    discriminator: type
+    required:
+      - type
+    properties:
+      type:
+        type: string
+  EmailParticipantDto:
+    type: object
+    description: Получатель письма с указанным e-mail адресом.
+    allOf:
+      - $ref: '#/definitions/ParticipantDto'
+      - type: object
+        properties:
+          email:
+            type: string
+  SystemParticipantDto:
+    type: object
+    description: Получатель письма - пользователь системы.
+    allOf:
+      - $ref: '#/definitions/ParticipantDto'
+      - type: object
+        properties:
+          id:
+            description: Идентификатор пользователя системы.
+            type: string
+            format: guid
+  ContextParticipantDto:
+    type: object
+    description: Контекстно зависимый получатель письма, например ответственный за инцидент.
+    allOf:
+      - $ref: '#/definitions/ParticipantDto'
+      - type: object
+        properties:
+          id:
+            type: string
+            description: Идентификатор.
+  TriggerStatus:
+    type: string
+    description: Состояние триггера.
+    enum:
+      - unknown
+      - active
+      - inactive
+      - invalid
+
+  DayOfWeek:
+    type: string
+    description: дни недели.
+    enum:
+      - notDefined
+      - sunday
+      - monday
+      - tuesday
+      - wednesday
+      - thursday
+      - friday
+      - saturday
+
+  TriggerParametersDto:
+    description: Базовый тип параметров срабатывания
+    type: object
+    discriminator: type
+    required:
+      - type
+    properties:
+      type:
+        type: string
+
+  TriggerByEventsParametersDto:
+    description: Параметры срабатывания по событиям
+    type: object
+    allOf:
+      - $ref: '#/definitions/TriggerParametersDto'
+
+  CalcNextFiresCommandDto:
+    description: 
+    type: object
+    required:
+       - parameters
+    properties:
+       parameters:
+         type: array
+         items:
+           $ref: '#/definitions/SchedulerParametersWithIdDto'
+
+  SchedulerParametersWithIdDto:
+    type: object
+    required:
+      - id
+      - parameters
+    properties:
+      id:
+        type: string
+        format: guid
+      parameters:
+        description: Параметры срабатывания.
+        $ref: '#/definitions/TriggerBySchedulerParametersDto'
+
+  CalcNextFiresResponseDto:
+    type: object
+    properties:
+       nextFires:
+         type: array
+         items:
+           $ref: '#/definitions/NextFireDto'
+
+  NextFireDto:
+    description: Следующий запуск
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: string
+        format: guid
+      time:
+        type: string
+        format: date-time
+
+  TriggerBySchedulerParametersDto:
+    description: Базовые параметры срабатывания по таймеру
+    type: object
+    allOf:
+      - $ref: '#/definitions/TriggerParametersDto'
+      - type: object
+        required:
+          - fromDate
+        properties:
+          fromDate:
+            type: string
+            format: date-time
+          toDate:
+            type: string
+            format: date-time
+
+  DailyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - 1 раз в день
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - daysOfWeek
+        properties:
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          daysOfWeek:
+            type: array
+            items:
+              $ref: '#/definitions/DayOfWeek'
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  WeeklyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - каждую N-ую неделю (без ограничения/месяца/года) в заданные дни недели
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - daysOfWeek
+        properties:
+          recurrence:
+            type: integer
+            description: Период повторяемости, каждую N-ную неделю, где N > 0
+          recurrenceRange:
+              $ref: '#/definitions/RecurrenceRange'
+              description: Диапазон повторяемости, в пределах которого будет действовать период повторяемости
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          daysOfWeek:
+            type: array
+            items:
+              $ref: '#/definitions/DayOfWeek'
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  PeriodicTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - каждые n дней
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - repeatInterval
+        properties:
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          repeatInterval:
+            type: integer
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  RepeatableDailyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - несколько раз в день
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - daysOfWeek
+          - repeatInterval
+        properties:
+          repeatInterval:
+            type: string
+            format:  time-span
+          fromTimeOfTheDay:
+            type: string
+            format:  time-span
+          toTimeOfTheDay:
+            type: string
+            format:  time-span
+          timeZone:
+            type: string
+            format: timezone
+          daysOfWeek:
+            type: array
+            items:
+              $ref: '#/definitions/DayOfWeek'
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  FortnightlyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - каждые 2 недели
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - daysOfWeek
+        properties:
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          daysOfWeek:
+            type: array
+            items:
+              $ref: '#/definitions/DayOfWeek'
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  MonthlyTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по таймеру - каждый N-ый месяц
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - atTime
+          - daysOfWeek
+        properties:
+          recurrence:
+            type: integer
+            description: Период повторяемости, каждый N-ый месяц, где N > 0
+          atTime:
+            type: string
+            format: time-span
+          timeZone:
+            type: string
+            format: timezone
+          onDays:
+            type: array
+            items:
+              type: integer
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  CronTriggerBySchedulerParametersDto:
+    type: object
+    description: Параметры срабатывания по cron выражению
+    allOf:
+      - $ref: '#/definitions/TriggerBySchedulerParametersDto'
+      - type: object
+        required:
+          - cronExpressions
+        properties:
+          cronExpressions:
+            type: array
+            items:
+              type: string
+          timeZone:
+            type: string
+            format: timezone
+          timeZoneId:
+            type: string
+            description: IANA-идентификатор таймзоны. Задаётся вместо смещения timeZone
+
+  RecurrenceRange:
+    type: string
+    description: Диапазон периодичности
+    enum:
+      - unknown
+      - indefinite
+      - month
+      - year
+
+  NameNotSpecifiedError:
+    description: Не задано название триггера
+    x-discriminator: core.triggers.nameNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  NameNotUniqueError:
+    description: Указано не уникальное название триггера
+    x-discriminator: core.triggers.nameNotUnique.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - name
+        properties:
+          name:
+            type: string
+            description: Указанное имя.
+
+  MetatypeNotSpecifiedError:
+    description: Не заданы условия срабатывания
+    x-discriminator: core.triggers.metatypeNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  MetatypeUnknownError:
+    description: Указан неизвестный тип уведомлений
+    x-discriminator: core.triggers.metatypeUnknown.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - metatype
+        properties:
+          metatype:
+            type: string
+            description: Неизвестный тип.
+
+  ParametersPayloadNotSpecified:
+    description: Не заданы условия срабатывания
+    x-discriminator: core.triggers.parametersPayloadNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  ExternalServiceUnavailableError:
+    description: Ошибка при валидации условий срабатывания внешним сервисом
+    x-discriminator: core.triggers.externalServiceUnavailable.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  ParametersPayloadInvalidError:
+    description: Невалидные условия срабатывания (проверяется внешним сервисом)
+    x-discriminator: core.triggers.parametersPayloadInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - message
+        properties:
+          message:
+            type: string
+            description: Ответ внешнего сервиса.
+
+  TimezoneInvalidError:
+    description: Указан неизвестный/невалидный часовой пояс
+    x-discriminator: core.triggers.timezoneInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - timezone
+        properties:
+          timezone:
+            type: string
+            description: Невалидная таймзона.
+
+  SchedulingParametersNotSpecifiedError:
+    description: Не задано расписание
+    x-discriminator: core.triggers.schedulingParametersNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  PeriodicityTypeUnknownError:
+    description: Указана неизвестная периодичность
+    x-discriminator: core.triggers.periodicityTypeUnknown.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - periodicity
+        properties:
+          periodicity:
+            type: string
+            description: Неизвестная периодичность.
+
+  DateToLessThanDateFromError:
+    description: Указана дата окончания срабатывания триггера меньше, чем дата начала
+    x-discriminator: core.triggers.dateToLessThanDateFrom.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  TimezoneAndTimeZoneOffsetNotSpecifiedError:
+    description: Не указаны ни таймзона, ни смещение
+    x-discriminator: core.triggers.timezoneAndTimeZoneOffsetNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  TimezoneOffsetInvalidError:
+    description: Указана невалидная таймзона (смещение)
+    x-discriminator: core.triggers.timezoneOffsetInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - offset
+        properties:
+          offset:
+            type: string
+            description: Некорректное смещение.
+
+  RepeatIntervalNotSpecifiedError:
+    description: Не указан repeat interval
+    x-discriminator: core.triggers.repeatIntervalNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  RepeatIntervalLessThanMinuteError:
+    description: Repeat interval должен быть не меньше минуты
+    x-discriminator: core.triggers.repeatIntervalLessThanMinute.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  RepeatIntervalHasSecondsError:
+    description: Repeat interval не должен содержать секунды
+    x-discriminator: core.triggers.repeatIntervalHasSeconds.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  RepeatIntervalExceedsLimitError:
+    x-discriminator: core.triggers.repeatIntervalExceedsLimit.error
+    description: Repeat interval не должен быть больше 1440 minutes (24 hours)
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+
+  DaysOfWeekNotSpecifiedError:
+    description: Не заданы дни недели
+    x-discriminator: core.triggers.daysOfWeekNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  DaysOfWeekInvalidError:
+    description: Указан невалидный день недели
+    x-discriminator: core.triggers.daysOfWeekInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  DaysOfMonthNotSpecifiedError:
+    description: Не указаны дни месяца
+    x-discriminator: core.triggers.daysOfMonthNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  DaysOfMonthInvalidError:
+    description: Указаны невалидные дни месяца
+    x-discriminator: core.triggers.daysOfMonthInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  SchedulingParametersNeverFireError:
+    description: Указаны параметры расписания такие, что уведомления никогда не придут
+    x-discriminator: core.triggers.schedulingParametersNeverFire.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  ReactionsNotSpecifiedError:
+    description: Не задана ни одна реакция
+    x-discriminator: core.triggers.reactionsNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  ReactionTypeUnknownError:
+    description: Задан неизвестный тиn реакции (не вебхук и не емейл)
+    x-discriminator: core.triggers.reactionTypeUnknown.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - reactionType
+        properties:
+          reactionType:
+            type: string
+            description: Неизвестная реакция.
+
+  EmailParticipantNotSpecifiedError:
+    description: Не указан ни один получатель для уведомления по почте
+    x-discriminator: core.triggers.emailParticipantNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  EmailParticipantTypeUnknownError:
+    description: Указан неизвестный тип получателя по почте
+    x-discriminator: core.triggers.emailParticipantTypeUnknown.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - participantType
+        properties:
+          participantType:
+            type: string
+            description: Неизвестный тип получателя.
+
+  WebHookUrlNotSpecifiedError:
+    description: Не указан url для уведомлений через web-hook'и
+    x-discriminator: core.triggers.webHookUrlNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  WebHookUrlDuplicatedError:
+    description: Указана два одинаковых url'а для уведомлений через веб-хуки
+    x-discriminator: core.triggers.webHookUrlDuplicated.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - duplicatedUris
+        properties:
+          duplicatedUris:
+            type: array
+            items:
+              type: string
+            description: Дублирующиеся uri.
+
+  WebHookUriInvalidError:
+    description: Указан невалидный формат url для уведомлений через веб-хуки
+    x-discriminator: core.triggers.webHookUriInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - invalidUris
+        properties:
+          invalidUris:
+            type: array
+            items:
+              type: string
+            description: Невалидные uri.
+
+  TriggerNotFoundError:
+    description: Триггер был удалён/не найден
+    x-discriminator: core.triggers.triggerNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  MetatypeChangeForbiddenError:
+    description: Нельзя изменить тип уведомлений
+    x-discriminator: core.triggers.metatypeChangeForbidden.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  InvalidTriggerActivationError:
+    description: Невалидные условия срабатывания (проверяется внешним сервисом)
+    x-discriminator: core.triggers.invalidTriggerActivation.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  WebHookCheckTimedoutError:
+    description: Превышен таймаут ожидания ответа
+    x-discriminator: core.triggers.webHookCheckTimedout.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  WebHookCheckInvalidHttpCodeError:
+    x-discriminator: core.triggers.webHookCheckInvalidHttpCode.error
+    description: Потребитель web hook вернул невалидный HTTP Status Code.
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - statusCode
+        properties:
+          statusCode:
+            type: string
+            description: HTTP Status code возвращенный потребителем web hook уведомлений.
+
+  WebHookCheckSslCheckFailedError:
+    x-discriminator: core.triggers.webHookCheckSslCheckFailed.error
+    description: SSL не прошел проверку.
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+
+  WebHookConnectionFailedError:
+    x-discriminator: core.triggers.webHookConnectionFailed.error
+    description: Не удалось подключиться к удаленному сервису.
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+
+  WebHookUnknownMetaTypeError:
+    x-discriminator: core.triggers.webHookUnknownMetaType.error
+    description: Неизвестный metatype
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+
+  ReactionNotAllowedError:
+    description: Задан недопустимый для триггера тип реакции
+    x-discriminator: core.triggers.reactionNotAllowed.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - reactions
+        properties:
+          reactions:
+            type: array
+            items:
+              type: string
+            description: Недопустимые реакции.
+
+  InvalidInputDataFormatError:
+    x-discriminator: core.triggers.invalidInputDataFormat.error
+    description: входные дынне не соотвутствуют формату
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+
+  FireAtTimeExceedsLimitError:
+    x-discriminator: core.triggers.fireAtTimeExceedsLimit.error
+    description: Время срабатывания триггера больше, чем 23:59:59
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+        
+  EmailFormatInvalidError:
+    x-discriminator: core.triggers.emailFormatInvalid.error
+    description: Указан некорректный email
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - invalidEmails
+        properties:
+          invalidEmails:
+            type: array
+            items:
+              type: string
+            description: Неверные email-ы.
+
+  RecurrenceRangeInvalidError:
+    description: Некорректное значение RecurrenceRange
+    x-discriminator: core.triggers.recurrenceRangeInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        properties:
+          recurrenceRange:
+            type: integer
+            description: Указанное значение
+
+  RecurrenceInvalidError:
+    description: Некорректное значение Recurrence
+    x-discriminator: core.triggers.recurrenceInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        properties:
+          recurrence:
+            type: integer
+            description: Указанное значение
+
+  CronExpressionInvalidError:
+    description: Некорректное cron выражение
+    x-discriminator: core.triggers.cronExpressionInvalid.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - cronExpressions
+        properties:
+          cronExpressions:
+            type: array
+            items:
+              type: string
+              description: Невалидные значения

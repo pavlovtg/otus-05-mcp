@@ -1,0 +1,543 @@
+﻿swagger: '2.0'
+info:
+  version: "1.0.0"
+  title: AssetVulnerabilities
+  description: Contract to modify vulnerabilities instances
+schemes:
+  - http
+  - https
+basePath: /api/assets_processing/v2/assets_vulnerabilities
+produces:
+  - application/json
+consumes:
+  - application/json
+paths:
+  /operations:
+    post:
+      operationId: StartVulnerabilitiesOperation
+      description: Запустить операцию над ЭУ. Операция определяется типом команды
+      parameters:
+        - name: command
+          in: body
+          schema:
+            $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+          required: true
+      responses:
+        201:
+          description: Created. Возвращаем token для получения состояния задачи
+          schema:
+            "$ref": "#/definitions/OperationToken"
+        400:
+          description: Ошибка запуска операции
+          x-errors:
+            - $ref: '#/definitions/TagToLongError'
+            - $ref: '#/definitions/TillDateLessThanCurrentError'
+            - $ref: '#/definitions/InvalidVulnerabilityInstanceIdFormatError'
+            - $ref: '#/definitions/VulnerableAssetsNotFoundError'
+            - $ref: '#/definitions/VulnerableAssetAccessForbiddenError'
+            - $ref: '#/definitions/OperationAlreadyExistsError'
+  /operations/{operationId}:
+    get:
+      operationId: GetOperationState
+      description: Получить состояние операции
+      parameters:
+        - type: string
+          name: operationId
+          description: Токен запущенной задачи
+          in: path
+          required: true
+          format: guid
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/VulnerabilityOperationResult'
+        202:
+          description: Accepted. Операция ещё выполняется
+        400:
+          x-errors:
+            - $ref: '#/definitions/VulnerabilityOperationNotFoundError'
+    delete:
+      operationId: AbortOperation
+      description: 'Прервать выполнение операции. Доступно только системному принципалу.'
+      parameters:
+        - type: string
+          name: operationId
+          description: Токен запущенной задачи
+          in: path
+          required: true
+          format: guid
+      responses:
+        200:
+          description: OK
+        202:
+          description: Accepted. Операция ещё выполняется
+        400:
+          x-errors:
+            - $ref: '#/definitions/VulnerabilityOperationNotFoundError'
+        401:
+          description: Forbidden
+      
+    put:
+      operationId: CompleteOperation
+      description: Завершить операцию
+      parameters:
+        - type: string
+          name: operationId
+          description: Токен запущенной задачи
+          in: path
+          required: true
+          format: guid
+      responses:
+        200:
+          description: OK
+        400:
+          description: Ошибка завершения операции
+          x-errors:
+            - $ref: '#/definitions/VulnerabilityOperationNotFoundError'
+            - $ref: '#/definitions/VulnerabilityOperationInvalidStateError'
+  /operations/commands:
+    get:
+      operationId: GetAvailableCommandsByCurrentStatus
+      description: Get available commands by current status
+      parameters:
+        - name: statuses
+          in: query
+          type: array
+          items:
+            $ref: '#/definitions/VulnerabilityStatus'
+          required: false
+      responses:
+        200:
+          description: OK. Result is an array of subtypes of ChangeVulnerabilitiesCommand. This array contains available commands for vulnerable instances in current state.
+          schema:
+            type: array
+            items:
+              type: string
+        400:
+          description: Указаны некорректные стейты
+          x-errors:
+            - $ref: '#/definitions/InvalidVulnerabilityStatusError'
+  /tags/operations:
+    post:
+      operationId: StartTagOperation
+      description: Запустить операцию над тэгом ЭУ. Операция определяется типом команды
+      parameters:
+        - name: command
+          in: body
+          schema:
+            $ref: '#/definitions/TagCommand'
+          required: true
+      responses:
+        201:
+          description: Created. Возвращаем token для получения состояния задачи
+          schema:
+            "$ref": "#/definitions/OperationToken"
+        400:
+          description: Ошибка запуска операции
+          x-errors:
+            - $ref: '#/definitions/TagToLongError'
+            - $ref: '#/definitions/TagNotFoundError'
+            - $ref: '#/definitions/TagOnUnaccessibleAssetError'
+  /tags/operations/{operationId}:
+    get:
+      operationId: GetTagOperationState
+      description: Получить состояние операции над тэгом
+      parameters:
+        - type: string
+          name: operationId
+          description: Токен запущенной задачи
+          in: path
+          required: true
+          format: guid
+      responses:
+        200:
+          description: Ok. Операция завершена
+        202:
+          description: Accepted. Операция ещё выполняется
+        400:
+          x-errors:
+            - $ref: '#/definitions/TagOperationNotFoundError'
+    put:
+      operationId: CompleteTagOperation
+      description: Завершить операцию над тэгом ЭУ
+      parameters:
+        - type: string
+          name: operationId
+          description: Токен запущенной задачи
+          in: path
+          required: true
+          format: guid
+      responses:
+        200:
+          description: OK
+        400:
+          description: Ошибка завершения операции
+          x-errors:
+            - $ref: '#/definitions/TagOperationNotFoundError'
+            - $ref: '#/definitions/TagOperationInvalidStateError'
+              
+definitions:
+  ChangeVulnerabilitiesCommand:
+    description: Базовая команда ЭУ
+    type: object
+    required:
+      - vulnerabilitiesInstancesIds
+      - type
+    properties:
+      operationId:
+        type: string
+        format: guid
+      vulnerabilitiesInstancesIds:
+        type: array
+        items:
+          type: string
+      note:
+        type: string
+      type: 
+        type: string
+    discriminator: type
+
+  SwitchToExcludeStateCommand:
+    description: Команда исключения ЭУ
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        required:
+          - reason
+        properties:
+          tillDate:
+            type: string  
+            format: date-time
+          reason:
+            $ref: '#/definitions/ExclusionReason'
+            
+  SwitchToExcludeStateUntilCommand:
+    description: Команда исключения ЭУ
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        required:
+          - reason
+          - fixType
+        properties:
+          period:
+            type: string
+            format: time-span
+          reason:
+            $ref: '#/definitions/ExclusionReason'
+          fixType:
+            $ref: '#/definitions/FixType'
+          policyRuleId:
+            type: string
+            format: guid
+
+  UpdateExcludeStateCommand:
+    description: Команда обновления статуса ЭУ (экземпляр уязвимости) "исключен"
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        required:
+          - changeReason
+          - changeTillDate
+          - changeNote
+        properties:
+          changeReason:
+            type: boolean
+          reason:
+            $ref: '#/definitions/ExclusionReason'
+          changeTillDate:
+            type: boolean
+          tillDate:
+            type: string
+            format: date-time
+          changeNote:
+            type: boolean
+
+  ExclusionReason:
+    description: Причина исключения уязвимости
+    type: string
+    enum:
+      - unknown
+      - acceptedAsLowRisk
+      - cannotFix
+      - compensatingControl
+      - falsePositive
+  
+  FixType:
+    description: Способ исправления
+    type: string
+    enum:
+      - unknown
+      - manual
+      - auto
+
+  SwitchToAwaitingFixStateCommand:
+    description: Команда обновления статуса ЭУ "исправляется"
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        required:
+          - tillDate
+        properties:
+          tillDate:
+            type: string
+            format: date-time
+            
+  SwitchToAwaitingFixStateUntilCommand:
+    description: Команда обновления статуса ЭУ "исправляется" с заданного момента
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        required:
+          - period
+          - startPointType
+        properties:
+          period:
+            type: string
+            format: time-span
+          startPointType:
+            $ref: '#/definitions/StartingPointType'
+          policyRuleId:
+            type: string
+            format: guid
+            
+  StartingPointType:
+    type: string
+    enum:
+      - unknown
+      - passportIssueDate
+      - detectDate
+      - patchDate
+
+  UpdateAwaitingFixStateCommand:
+    description: Команда перевода ЭУ в статус AwaitingFix
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        required:
+          - changeTillDate
+          - changeNote
+        properties:
+          changeTillDate:
+            type: boolean
+          tillDate:
+            type: string
+            format: date-time
+          changeNote:
+            type: boolean
+             
+  SwitchToInProgressStateCommand:
+    description: Команда перевода ЭУ в статус InProgress
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+
+  SwitchToNewStateCommand:
+    description: Команда перевода ЭУ в статус New
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        properties:
+          fixType:
+            $ref: '#/definitions/FixType'
+          policyRyleId:
+            type: string
+            format: guid
+        
+  ResetVulnerabilityStateCommand:
+    description: 'Сбросить изменения статуса для применения политик на данном ЭУ'
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+
+  ChangeTagsCommand:
+    description: Команда изменения тэгов ЭУ
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        required:
+          - addedTags
+          - removedTags
+        properties:
+          addedTags:
+            type: array
+            items:
+              type: string
+          removedTags:
+            type: array
+            items:
+              type: string
+       
+  ChangeIsDangerousCommand:
+    description: Команда установки флага ООУ
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+        required:
+          - isDangerous
+        properties:
+          isDangerous:
+            type: boolean
+          policyRuleId:
+            type: string
+            format: guid
+    
+  ResetIsDangerousCommand:
+    description: Сбросить флаг ООУ для применения политик
+    allOf:
+      - $ref: '#/definitions/ChangeVulnerabilitiesCommand'
+      - type: object
+
+  VulnerabilityOperationResult:
+    description: Результат выполнения команды
+    type: object
+    required:
+      - totalCount
+      - succeedCount
+    properties:
+      totalCount:
+        type: integer
+      succeedCount:
+        type: integer
+
+  OperationToken:
+    type: object
+    required:
+    - operationId
+    properties:
+      operationId:
+        type: string
+        format: guid
+
+  TagCommand:
+    description: Базовая команда тэга ЭУ
+    type: object
+    required:
+      - tag
+      - type
+    properties:
+      tag:
+        type: string
+      type: 
+        type: string
+    discriminator: type
+
+  RemoveTagCommand:
+    description: Команда удаления тэга ЭУ
+    allOf:
+      - $ref: '#/definitions/TagCommand'
+      - type: object
+          
+  VulnerabilityOperationNotFoundError:
+    description: Операция не найдена
+    x-discriminator: core.assetVulnerability.operationNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        
+  TagToLongError:
+    description: Слишком длинное имя тэга
+    x-discriminator: core.assetVulnerability.tagToLong.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - tag
+        properties:
+          tag:
+            type: string
+            
+  InvalidVulnerabilityInstanceIdFormatError:
+    description: некорректный формат идентификатора уязвимости
+    x-discriminator: core.assetVulnerability.invalidVulnerabilityFormat.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        required:
+          - tag
+        properties:
+          tag:
+            type: string
+            
+  VulnerableAssetAccessForbiddenError:
+    description: У пользователя нет доступа к активу, с указанным ЭУ
+    x-discriminator: core.assetVulnerability.vulnerableAssetAccessForbidden.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+              
+  TagNotFoundError:
+    description: Тэг не найден
+    x-discriminator: core.assetVulnerability.tagNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        
+  TagOnUnaccessibleAssetError:
+    description: Тэг есть на ЭУ, привязанных к недоступным активам
+    x-discriminator: core.assetVulnerability.tagOnUnaccessibleAsset.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+              
+  VulnerableAssetsNotFoundError:
+    description: Активы с указанными экземплярами уязвимостей не существуют
+    x-discriminator: core.assetVulnerability.vulnerableAssetsNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        
+  VulnerabilityOperationInvalidStateError:
+    description: Операция еще не готова к завершению
+    x-discriminator: core.assetVulnerability.vulnerabilityOperationInvalidState.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        
+  TagOperationNotFoundError:
+    description: Операция не найдена
+    x-discriminator: core.assetVulnerability.tagOperationNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        
+  TagOperationInvalidStateError:
+    description: Операция еще не готова к завершению
+    x-discriminator: core.assetVulnerability.tagOperationInvalidState.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  InvalidVulnerabilityStatusError:
+    description: Некорректное значение статуса
+    x-discriminator: core.assetVulnerability.invalidVulnerabilityStatus.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+          
+  TillDateLessThanCurrentError:
+    description: Till Date статуса меньше текущей даты
+    x-discriminator: core.assetVulnerability.tillDateLessThanCurrent.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        
+  OperationAlreadyExistsError:
+    description: Операция с таким Id уже существует
+    x-discriminator: core.assetVulnerability.operationAlreadyExists.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  VulnerabilityStatus:
+    type: string
+    enum:
+      - unknown
+      - new
+      - inProgress
+      - awaitingFix
+      - excluded
+      - fixed
+      - stale
+      - overdue

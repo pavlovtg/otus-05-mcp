@@ -1,0 +1,33 @@
+﻿swagger: '2.0'
+info:
+  title: Consumer
+  version: '1.0'
+  description: Контракт для приема событий от потребителей сервиса триггеров.
+basePath: /api/triggers/v1 
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /event/{eventId}:
+    post:
+      operationId: RaiseEvent
+      parameters:
+        - name: eventId
+          in: path
+          type: string
+          required: true
+        - name: payload
+          in: body
+          schema:
+            type: object
+            additionalProperties: {}
+          required: true 
+        - name: commandId
+          in: query
+          type: string
+          format: uuid
+          required: true
+      responses:
+        200:
+          description: ''

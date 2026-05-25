@@ -1,0 +1,283 @@
+﻿swagger: '2.0'
+info:
+  title: MetaTriggers
+  version: '1.0'
+  description: Контракт для управления мета триггерами. Устаревший, заменен на MetaTriggersV2
+basePath: /api/triggers/v1 
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /meta_triggers:
+    get:
+      operationId: GetMetaTriggers
+      responses:
+        200:
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref : '#/definitions/ObjectInfo'
+    put:
+      operationId: UpsertMetaTriggers
+      parameters:
+        - name: metaTriggerLayer
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/MetaTriggerLayerDto'
+      responses:
+        204:
+          description: ''
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/MetatypeAlreadyRegisteredError'
+            - $ref: '#/definitions/InvalidBaseServicePathError'
+            - $ref: '#/definitions/EventTypesNotSpecifiedError'
+            - $ref: '#/definitions/CheckUrlsNotSpecifiedError'
+            - $ref: '#/definitions/ReactionsNotSpecifiedError'
+            - $ref: '#/definitions/ReactionsRemovedError'
+            - $ref: '#/definitions/UnsupportedReactionTypeError'
+
+  /meta_triggers/{id}:
+    get:
+      operationId: GetMetaTrigger
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/MetaTriggerDto'
+            
+  /meta_triggers/{id}/email_notification/context_participants:
+    get:
+      operationId: GetContextParticipants
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref : '#/definitions/ObjectInfo'
+            
+  /meta_triggers/templates/{metaTriggerId}:
+    put:
+      operationId: UpsertTemplate
+      parameters:
+        - name: metaTriggerId
+          in: path
+          type: string
+          required: true
+        - name: templates
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/EmailTemplateDto'
+          required: true
+      responses:
+        204:
+          description: ''
+        400:
+          description: BadRequest
+          x-errors:
+            - $ref: '#/definitions/MetatypeNotFoundError'
+
+definitions:
+  ObjectInfo:
+    type: object
+    properties:
+      id:
+        type: string
+      displayName:
+        type: string
+    required:
+      - id
+      - displayName
+      
+  MetaTriggerDto:
+    type: object
+    properties:
+      id:
+        type: string
+      displayName:
+        type: string
+      reactions:
+        type: array
+        items:
+          type: string
+    required:
+      - id
+      - reactions
+      - displayName
+
+  MetaTriggerLayerDto:
+    type: object
+    properties:
+      metaTriggers:
+        type: array
+        items:
+          $ref : '#/definitions/MetaTriggerDefinitionDto'
+      
+  MetaTriggerDefinitionDto:
+    type: object
+    properties:
+      id:
+        type: string
+      serviceId:
+        type: string
+      serviceBasePath:
+        type: string
+      parametersValidationUrl:
+        type: string
+      parametersRenderingUrl:
+        type: string
+      eventCheckingUrl:
+        type: string
+      schedulingCheckingUrl:
+        type: string
+      displayName:
+        type: string
+      eventTypes:
+        type: array
+        items:
+          type: string
+      reactions:
+        type: array
+        items:
+          $ref : '#/definitions/ReactionDto'
+    required:
+      - id
+      - serviceId
+      - serviceBasePath
+      - parametersValidationUrl
+      - parametersRenderingUrl
+      - eventCheckingUrl
+      - schedulingCheckingUrl
+      - displayName
+      - eventTypes
+      - reactions
+
+  ReactionDto:
+    type: object
+    discriminator: type
+    description: Реакция на срабатывание.
+    required:
+      - type
+    properties:
+      type:
+        type: string
+
+  EmailNotificationDto:
+    type: object
+    allOf:
+      - $ref: '#/definitions/ReactionDto'
+      - type: object
+        properties:
+          dataQueryUrl:
+            type: string
+          contextParticipants:
+            type: array
+            items:
+              $ref : '#/definitions/ObjectInfo'
+        required:
+          - templateType
+          - dataQueryUrl
+          - contextParticipants
+
+  WebHookDto:
+    type: object
+    allOf:
+      - $ref: '#/definitions/ReactionDto'
+      - type: object
+        properties:
+          dataQueryUrl:
+            type: string
+          dataSchemaUrl:
+            type: string
+            description: Web hook data schema URL. Optional by default.
+        required:
+          - dataQueryUrl
+
+  EmailTemplateDto:
+    type: object
+    required:
+      - subject
+      - body
+    properties:
+      templateId:
+        description: email template identifier
+        type: string
+      subject:
+        type: string
+      body:
+        type: string
+      cultureName:
+        type: string
+
+  MetatypeAlreadyRegisteredError:
+    description: метатриггер с заданным идентификатором уже зарегистрирован
+    x-discriminator: core.triggers.metatypeAlreadyRegistered.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  InvalidBaseServicePathError:
+    description: некорректный базовый адрес сервиса поставщика данных
+    x-discriminator: core.triggers.invalidBaseServicePath.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  EventTypesNotSpecifiedError:
+    description: не указаны типы событий срабатывания метатриггера
+    x-discriminator: core.triggers.eventTypesNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  CheckUrlsNotSpecifiedError:
+    description: не заданы url для валидации событий
+    x-discriminator: core.triggers.checkUrlsNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  ReactionsNotSpecifiedError:
+    description: не заданы реакции метатриггера
+    x-discriminator: core.triggers.reactionsNotSpecified.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  ReactionsRemovedError:
+    description: попытка удалить реакцию из метатриггера
+    x-discriminator: core.triggers.reactionsRemoved.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+
+  MetatypeNotFoundError:
+    description: метатриггер не найден
+    x-discriminator: core.triggers.metatypeNotFound.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
+        
+  UnsupportedReactionTypeError:
+    description: неизвестный тип реакции
+    x-discriminator: core.triggers.unsupportedReactionType.error
+    allOf:
+      - $ref: './errors.json#/definitions/Error'
+      - type: object
