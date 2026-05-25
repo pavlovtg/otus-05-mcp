@@ -1,0 +1,26 @@
+# .NET артефакты сборки
+bin/
+obj/
+.vs/
+
+# Пользовательские настройки
+*.user
+*.suo
+
+# Секреты и локальные конфигурации
+.env
+.env.*
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+!appsettings.json
+
+# macOS
+.DS_Store
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Логи
+*.log
