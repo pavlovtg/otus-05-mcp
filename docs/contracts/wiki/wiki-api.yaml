@@ -1,0 +1,116 @@
+openapi: "3.0.3"
+info:
+  title: Wiki API
+  description: REST API для каталога swagger-контрактов внутренних сервисов
+  version: "1.0.0"
+paths:
+  /api/contracts:
+    get:
+      summary: Список контрактов
+      description: Возвращает список всех доступных swagger-контрактов из источника данных
+      operationId: listContracts
+      responses:
+        "200":
+          description: Список контрактов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContractInfo"
+  /api/contracts/search:
+    get:
+      summary: Поиск контрактов
+      description: Поиск по имени файла и полям info.title, info.description
+      operationId: searchContracts
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Строка поиска
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Результаты поиска
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContractInfo"
+        "400":
+          description: Параметр q отсутствует или пустой
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /api/contracts/{name}:
+    get:
+      summary: Получение контракта по имени
+      description: Возвращает содержимое конкретного swagger-файла
+      operationId: getContract
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Имя файла контракта (например, MyService.yaml)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Содержимое YAML-файла
+          content:
+            application/yaml:
+              schema:
+                type: string
+        "400":
+          description: Некорректное имя файла (path traversal)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: Контракт не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+components:
+  schemas:
+    ContractInfo:
+      type: object
+      required:
+        - name
+        - title
+        - version
+        - description
+      properties:
+        name:
+          type: string
+          description: Имя файла контракта
+          example: MyService.yaml
+        title:
+          type: string
+          description: Заголовок из поля info.title
+          example: My Service API
+        version:
+          type: string
+          description: Версия из поля info.version
+          example: "1.0.0"
+        description:
+          type: string
+          description: Описание из поля info.description
+          example: API для управления ресурсами
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string

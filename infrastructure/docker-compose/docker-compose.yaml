@@ -1,0 +1,26 @@
+name: otus-05-mcp
+
+services:
+  wiki-api:
+    container_name: wiki-api
+    build:
+      context: ../../apps/wiki
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../../apps/wiki/content:/data/contracts:ro
+    environment:
+      - CONTRACTS_PATH=/data/contracts
+      - ASPNETCORE_URLS=http://+:5000
+
+  swagger-ui:
+    container_name: wiki-swagger-ui
+    image: swaggerapi/swagger-ui
+    ports:
+      - "5100:8080"
+    environment:
+      - "URLS=[{ url: \"http://localhost:5000/api/contracts/Analytics.DataExporter.V1.yaml\", name: \"Analytics.DataExporter.V1\" }, { url: \"http://localhost:5000/api/contracts/Assets.Processing.Contracts.yaml\", name: \"Assets.Processing.Contracts\" }, { url: \"http://localhost:5000/api/contracts/AssetsOperations.Contracts.yaml\", name: \"AssetsOperations.Contracts\" }, { url: \"http://localhost:5000/api/contracts/AssetVulnerabilities.Contracts.yaml\", name: \"AssetVulnerabilities.Contracts\" }, { url: \"http://localhost:5000/api/contracts/Consumer.Contracts.yaml\", name: \"Consumer.Contracts\" }, { url: \"http://localhost:5000/api/contracts/DebugTriggers.Contracts.yaml\", name: \"DebugTriggers.Contracts\" }, { url: \"http://localhost:5000/api/contracts/DeploymentTarget.Contracts.yaml\", name: \"DeploymentTarget.Contracts\" }, { url: \"http://localhost:5000/api/contracts/Dictionaries.Contracts.yaml\", name: \"Dictionaries.Contracts\" }, { url: \"http://localhost:5000/api/contracts/EventStream.Contracts.v2.yaml\", name: \"EventStream.Contracts.v2\" }, { url: \"http://localhost:5000/api/contracts/EventStream.Contracts.yaml\", name: \"EventStream.Contracts\" }, { url: \"http://localhost:5000/api/contracts/KnowledgeBase.Contracts.yaml\", name: \"KnowledgeBase.Contracts\" }, { url: \"http://localhost:5000/api/contracts/MasterData.Contracts.yaml\", name: \"MasterData.Contracts\" }, { url: \"http://localhost:5000/api/contracts/MasterDataEventStream.Contracts.v2.yaml\", name: \"MasterDataEventStream.Contracts.v2\" }, { url: \"http://localhost:5000/api/contracts/MetaTriggers.Contracts.v2.yaml\", name: \"MetaTriggers.Contracts.v2\" }, { url: \"http://localhost:5000/api/contracts/MetaTriggers.Contracts.yaml\", name: \"MetaTriggers.Contracts\" }, { url: \"http://localhost:5000/api/contracts/Notifications.Contracts.yaml\", name: \"Notifications.Contracts\" }, { url: \"http://localhost:5000/api/contracts/QueuesMonitoring.Contracts.yaml\", name: \"QueuesMonitoring.Contracts\" }, { url: \"http://localhost:5000/api/contracts/TimeZones.Contracts.yaml\", name: \"TimeZones.Contracts\" }, { url: \"http://localhost:5000/api/contracts/Triggers.Contracts.v2.yaml\", name: \"Triggers.Contracts.v2\" }, { url: \"http://localhost:5000/api/contracts/Triggers.Contracts.yaml\", name: \"Triggers.Contracts\" }, { url: \"http://localhost:5000/api/contracts/UserAssetCreationInfo.Contracts.yaml\", name: \"UserAssetCreationInfo.Contracts\" }, { url: \"http://localhost:5000/api/contracts/Vulnerabilities.Contracts.yaml\", name: \"Vulnerabilities.Contracts\" }]"
+      - SUPPORTED_SUBMIT_METHODS=[]
+    depends_on:
+      - wiki-api
