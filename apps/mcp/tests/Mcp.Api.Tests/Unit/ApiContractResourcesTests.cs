@@ -1,5 +1,6 @@
 using Mcp.Api.Clients;
 using Mcp.Api.Resources;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Mcp.Api.Tests.Unit;
@@ -12,7 +13,7 @@ public class ApiContractResourcesTests
 	public ApiContractResourcesTests()
 	{
 		_wikiClientMock = new Mock<IWikiApiClient>(MockBehavior.Strict);
-		_resources = new ApiContractResources(_wikiClientMock.Object);
+		_resources = new ApiContractResources(_wikiClientMock.Object, NullLogger<ApiContractResources>.Instance);
 	}
 
 	[Fact]
