@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Docker Compose конфигурация
 
@@ -16,46 +16,16 @@ Docker Compose проект SHALL иметь фиксированное имя `
 - **WHEN** пользователь выполняет `docker compose up` из директории `infrastructure/docker-compose/`
 - **THEN** запускаются контейнеры wiki-api, swagger-ui и mcp, все доступны на хостовой машине
 
-### Requirement: Доступность на хостовой машине
+## ADDED Requirements
 
-После запуска docker-compose SHALL быть доступны:
+### Requirement: Доступность MCP-сервера
 
-- Wiki REST API на порту `5000`
-- Swagger UI на порту `5100`
-- MCP-сервер на порту `5200`
-
-#### Scenario: Доступ к Swagger UI
-
-- **WHEN** docker-compose запущен
-- **THEN** пользователь открывает `http://localhost:5100` и видит интерфейс Swagger UI с каталогом контрактов
-
-#### Scenario: Доступ к REST API
-
-- **WHEN** docker-compose запущен
-- **THEN** запрос `GET http://localhost:5000/api/contracts` возвращает список контрактов
+После запуска docker-compose MCP-сервер SHALL быть доступен на порту `5200`.
 
 #### Scenario: Доступ к MCP-серверу
 
 - **WHEN** docker-compose запущен
 - **THEN** MCP-эндпоинт доступен по адресу `http://localhost:5200`
-
-### Requirement: Монтирование папки контрактов
-
-Docker Compose SHALL монтировать папку `apps/wiki/content/` с хостовой машины в контейнер wiki-api.
-
-#### Scenario: Монтирование volume
-
-- **WHEN** docker-compose запускает wiki-api контейнер
-- **THEN** папка `../../apps/wiki/content` (относительно `infrastructure/docker-compose/`) смонтирована в контейнер
-
-### Requirement: Сборка образа wiki-api
-
-Docker Compose SHALL собирать образ wiki-api из `Dockerfile`, расположенного в `apps/wiki/`.
-
-#### Scenario: Сборка при первом запуске
-
-- **WHEN** пользователь выполняет `docker compose up --build`
-- **THEN** образ wiki-api собирается из `apps/wiki/Dockerfile`
 
 ### Requirement: Сборка образа mcp
 

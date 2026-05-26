@@ -14,6 +14,19 @@ services:
       - CONTRACTS_PATH=/data/contracts
       - ASPNETCORE_URLS=http://+:5000
 
+  mcp:
+    container_name: mcp
+    build:
+      context: ../../apps/mcp
+      dockerfile: Dockerfile
+    ports:
+      - "5200:5200"
+    environment:
+      - ASPNETCORE_URLS=http://+:5200
+      - WIKI_API_URL=http://wiki-api:5000
+    depends_on:
+      - wiki-api
+
   swagger-ui:
     container_name: wiki-swagger-ui
     image: swaggerapi/swagger-ui
