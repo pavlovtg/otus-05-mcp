@@ -1,6 +1,7 @@
 using Mcp.Api.Clients;
 using Mcp.Api.Models;
 using Mcp.Api.Tools;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Mcp.Api.Tests.Unit;
@@ -13,7 +14,7 @@ public class ApiDiscoveryToolsTests
 	public ApiDiscoveryToolsTests()
 	{
 		_wikiClientMock = new Mock<IWikiApiClient>(MockBehavior.Strict);
-		_tools = new ApiDiscoveryTools(_wikiClientMock.Object);
+		_tools = new ApiDiscoveryTools(_wikiClientMock.Object, NullLogger<ApiDiscoveryTools>.Instance);
 	}
 
 	[Fact]

@@ -11,3 +11,11 @@ coverage/
 *.coverage
 *.coveragexml
 lcov.info
+
+# Python
+__pycache__/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
