@@ -17,7 +17,6 @@ builder.Services
 	.AddMcpServer()
 	.WithHttpTransport()
 	.WithTools<ApiDiscoveryTools>()
-	.WithResources<ApiContractResourceCollection>()
 	.WithResources<ApiContractResources>();
 
 var app = builder.Build();
