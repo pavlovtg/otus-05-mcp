@@ -24,3 +24,10 @@ appsettings.*.json
 
 # Логи
 *.log
+
+# Результаты тестов и code coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+lcov.info
