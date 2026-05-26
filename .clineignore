@@ -6,3 +6,8 @@ obj/
 *.jpg
 *.ico
 apps/wiki/content/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+lcov.info
