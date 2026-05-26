@@ -34,7 +34,7 @@ jobs:
           for i in $(seq 1 30); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5200/ \
               -H "Content-Type: application/json" \
-              -H "Accept: application/json" \
+              -H "Accept: application/json, text/event-stream" \
               -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1.0"}}}')
             if [ "$STATUS" = "200" ]; then
               echo "mcp is ready"

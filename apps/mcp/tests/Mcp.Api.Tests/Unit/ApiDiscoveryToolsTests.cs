@@ -67,4 +67,36 @@ public class ApiDiscoveryToolsTests
 
 		Assert.Empty(result);
 	}
+
+	[Fact]
+	public async Task SearchApis_WithEmptyQuery_ReturnsAllContracts()
+	{
+		var contracts = new List<ContractInfo>
+		{
+			new() { Name = "Service1.yaml", Title = "Service 1", Version = "1.0", Description = "Desc 1" },
+		};
+		_wikiClientMock.Setup(c => c.GetContractsAsync()).ReturnsAsync(contracts);
+
+		var result = await _tools.SearchApisAsync("");
+
+		Assert.Single(result);
+		_wikiClientMock.Verify(c => c.GetContractsAsync(), Times.Once);
+		_wikiClientMock.Verify(c => c.SearchContractsAsync(It.IsAny<string>()), Times.Never);
+	}
+
+	[Fact]
+	public async Task SearchApis_WithWhitespaceQuery_ReturnsAllContracts()
+	{
+		var contracts = new List<ContractInfo>
+		{
+			new() { Name = "Service1.yaml", Title = "Service 1", Version = "1.0", Description = "Desc 1" },
+		};
+		_wikiClientMock.Setup(c => c.GetContractsAsync()).ReturnsAsync(contracts);
+
+		var result = await _tools.SearchApisAsync("   ");
+
+		Assert.Single(result);
+		_wikiClientMock.Verify(c => c.GetContractsAsync(), Times.Once);
+		_wikiClientMock.Verify(c => c.SearchContractsAsync(It.IsAny<string>()), Times.Never);
+	}
 }

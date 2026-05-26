@@ -1,7 +1,7 @@
 """E2E-тесты MCP tools: list_apis, search_apis."""
 import httpx
 import pytest
-from conftest import initialize_session, mcp_request
+from conftest import initialize_session, mcp_request, parse_sse_response
 
 
 @pytest.fixture(scope="module")
@@ -20,7 +20,7 @@ def call_tool(client: httpx.Client, session_id: str | None, tool_name: str, argu
         headers["mcp-session-id"] = session_id
     response = client.post("/", json=payload, headers=headers)
     response.raise_for_status()
-    return response.json()
+    return parse_sse_response(response)
 
 
 def list_tools(client: httpx.Client, session_id: str | None) -> dict:
@@ -30,7 +30,7 @@ def list_tools(client: httpx.Client, session_id: str | None) -> dict:
         headers["mcp-session-id"] = session_id
     response = client.post("/", json=payload, headers=headers)
     response.raise_for_status()
-    return response.json()
+    return parse_sse_response(response)
 
 
 def test_list_apis_tool_exists(mcp_client: httpx.Client, session: str | None) -> None:

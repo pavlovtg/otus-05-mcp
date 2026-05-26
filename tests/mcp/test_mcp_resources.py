@@ -1,7 +1,7 @@
 """E2E-тесты MCP resources: resources/list, api://{name}."""
 import httpx
 import pytest
-from conftest import initialize_session, mcp_request
+from conftest import initialize_session, mcp_request, parse_sse_response
 
 
 @pytest.fixture(scope="module")
@@ -16,7 +16,7 @@ def list_resources(client: httpx.Client, session_id: str | None) -> dict:
         headers["mcp-session-id"] = session_id
     response = client.post("/", json=payload, headers=headers)
     response.raise_for_status()
-    return response.json()
+    return parse_sse_response(response)
 
 
 def read_resource(client: httpx.Client, session_id: str | None, uri: str) -> dict:
@@ -26,7 +26,7 @@ def read_resource(client: httpx.Client, session_id: str | None, uri: str) -> dic
         headers["mcp-session-id"] = session_id
     response = client.post("/", json=payload, headers=headers)
     response.raise_for_status()
-    return response.json()
+    return parse_sse_response(response)
 
 
 def test_resources_list_returns_contracts(mcp_client: httpx.Client, session: str | None) -> None:

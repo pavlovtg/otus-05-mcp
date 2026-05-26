@@ -27,6 +27,9 @@ public class ApiDiscoveryTools
 	public async Task<IReadOnlyList<ContractInfo>> SearchApisAsync(
 		[Description("Строка поиска")] string query)
 	{
+		if (string.IsNullOrWhiteSpace(query))
+			return await _wikiApiClient.GetContractsAsync();
+
 		return await _wikiApiClient.SearchContractsAsync(query);
 	}
 }

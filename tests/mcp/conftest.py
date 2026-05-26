@@ -1,3 +1,4 @@
+import json
 import os
 import pytest
 import httpx
@@ -24,6 +25,14 @@ def mcp_request(method: str, params: dict | None = None, request_id: int = 1) ->
         "method": method,
         "params": params or {},
     }
+
+
+def parse_sse_response(response: httpx.Response) -> dict:
+    """Парсит SSE-ответ и возвращает JSON из строки data:."""
+    for line in response.text.splitlines():
+        if line.startswith("data: "):
+            return json.loads(line[6:])
+    raise ValueError(f"No data line in SSE response: {response.text!r}")
 
 
 def initialize_session(client: httpx.Client) -> str | None:
