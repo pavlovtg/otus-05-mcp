@@ -1,6 +1,12 @@
+using Serilog;
 using Wiki.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .MinimumLevel.Information()
+    .Enrich.WithProperty("service", "WikiAPI")
+    .WriteTo.Console(outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3} [{service}] {Message:lj} {Properties:j}{NewLine}{Exception}"));
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<IContractService, ContractService>();

@@ -14,3 +14,5 @@
 | [0010](mcp/0010-mcp-server-stack.md) | Стек MCP-сервера | mcp | принят |
 | [0011](general/0011-e2e-testing-pytest.md) | E2E-тесты через pytest | general | принят |
 | [0012](general/0012-python-code-style.md) | Code style для Python | general | принят |
+| [0013](general/0013-logging-format.md) | Формат логирования сервисов | general | принят |
+| [0014](dotnet/0014-serilog-logging-library.md) | Serilog как библиотека логирования для .NET-сервисов | dotnet | принят |
