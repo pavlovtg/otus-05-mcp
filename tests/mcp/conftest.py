@@ -33,22 +33,3 @@ def parse_sse_response(response: httpx.Response) -> dict:
         if line.startswith("data: "):
             return json.loads(line[6:])
     raise ValueError(f"No data line in SSE response: {response.text!r}")
-
-
-def initialize_session(client: httpx.Client) -> str | None:
-    """Инициализирует MCP-сессию и возвращает session_id."""
-    payload = mcp_request(
-        "initialize",
-        {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "e2e-test", "version": "1.0"},
-        },
-    )
-    response = client.post(
-        "/",
-        json=payload,
-        headers={"Accept": "application/json, text/event-stream"},
-    )
-    response.raise_for_status()
-    return response.headers.get("mcp-session-id")

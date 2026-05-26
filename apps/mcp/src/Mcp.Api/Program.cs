@@ -15,7 +15,7 @@ builder.Services.AddHttpClient<IWikiApiClient, WikiApiClient>(client =>
 
 builder.Services
 	.AddMcpServer()
-	.WithHttpTransport()
+	.WithHttpTransport(options => options.Stateless = true)
 	.WithTools<ApiDiscoveryTools>()
 	.WithResources<ApiContractResources>();
 

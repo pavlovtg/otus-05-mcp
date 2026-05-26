@@ -23,7 +23,7 @@
 
 - [ ] 4.1 Создать `Resources/ApiContractResources.cs` с атрибутом `[McpServerResourceType]`
 - [ ] 4.2 Реализовать resource `api://{name}` — возвращает Swagger YAML из wiki-api
-- [ ] 4.3 Реализовать `resources/list` — возвращает список всех контрактов как MCP-ресурсы
+- [ ] 4.3 Реализовать `resources/templates/list` — возвращает список всех контрактов как MCP-ресурсы
 
 ## 5. .NET-тесты
 

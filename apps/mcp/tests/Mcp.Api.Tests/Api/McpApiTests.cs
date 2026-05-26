@@ -47,49 +47,30 @@ public class McpApiTests : IClassFixture<WebApplicationFactory<Program>>
 	private static StringContent McpJson(object payload) =>
 		new(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-	private static object InitializePayload() => new
-	{
-		jsonrpc = "2.0",
-		id = 1,
-		method = "initialize",
-		@params = new
+	private static HttpRequestMessage McpRequest(object payload) =>
+		new(HttpMethod.Post, "/")
 		{
-			protocolVersion = "2024-11-05",
-			capabilities = new { },
-			clientInfo = new { name = "test", version = "1.0" },
-		},
-	};
-
-	private async Task<(HttpClient client, string? sessionId)> InitializeSessionAsync()
-	{
-		var client = CreateFactory().CreateClient();
-
-		var request = new HttpRequestMessage(HttpMethod.Post, "/")
-		{
-			Content = McpJson(InitializePayload()),
+			Content = McpJson(payload),
+			Headers = { { "Accept", "application/json, text/event-stream" } },
 		};
-		request.Headers.Add("Accept", "application/json, text/event-stream");
-
-		var response = await client.SendAsync(request);
-		var sessionId = response.Headers.TryGetValues("mcp-session-id", out var values)
-			? values.FirstOrDefault()
-			: null;
-
-		return (client, sessionId);
-	}
 
 	[Fact]
 	public async Task McpEndpoint_Initialize_ReturnsSuccess()
 	{
 		var client = CreateFactory().CreateClient();
 
-		var request = new HttpRequestMessage(HttpMethod.Post, "/")
+		var response = await client.SendAsync(McpRequest(new
 		{
-			Content = McpJson(InitializePayload()),
-		};
-		request.Headers.Add("Accept", "application/json, text/event-stream");
-
-		var response = await client.SendAsync(request);
+			jsonrpc = "2.0",
+			id = 1,
+			method = "initialize",
+			@params = new
+			{
+				protocolVersion = "2024-11-05",
+				capabilities = new { },
+				clientInfo = new { name = "test", version = "1.0" },
+			},
+		}));
 		var body = await response.Content.ReadAsStringAsync();
 
 		Assert.True(response.IsSuccessStatusCode,
@@ -99,23 +80,15 @@ public class McpApiTests : IClassFixture<WebApplicationFactory<Program>>
 	[Fact]
 	public async Task McpEndpoint_ListTools_ContainsListApis()
 	{
-		var (client, sessionId) = await InitializeSessionAsync();
+		var client = CreateFactory().CreateClient();
 
-		var request = new HttpRequestMessage(HttpMethod.Post, "/")
+		var response = await client.SendAsync(McpRequest(new
 		{
-			Content = McpJson(new
-			{
-				jsonrpc = "2.0",
-				id = 2,
-				method = "tools/list",
-				@params = new { },
-			}),
-		};
-		request.Headers.Add("Accept", "application/json, text/event-stream");
-		if (sessionId != null)
-			request.Headers.Add("mcp-session-id", sessionId);
-
-		var response = await client.SendAsync(request);
+			jsonrpc = "2.0",
+			id = 2,
+			method = "tools/list",
+			@params = new { },
+		}));
 		var body = await response.Content.ReadAsStringAsync();
 
 		Assert.True(response.IsSuccessStatusCode, $"Status: {response.StatusCode}, Body: {body}");
@@ -124,28 +97,38 @@ public class McpApiTests : IClassFixture<WebApplicationFactory<Program>>
 	}
 
 	[Fact]
-	public async Task McpEndpoint_ResourcesList_ReturnsSuccess()
+	public async Task McpEndpoint_ResourcesTemplatesList_ReturnsSuccess()
 	{
-		var (client, sessionId) = await InitializeSessionAsync();
+		var client = CreateFactory().CreateClient();
 
-		var request = new HttpRequestMessage(HttpMethod.Post, "/")
+		var response = await client.SendAsync(McpRequest(new
 		{
-			Content = McpJson(new
-			{
-				jsonrpc = "2.0",
-				id = 2,
-				method = "resources/list",
-				@params = new { },
-			}),
-		};
-		request.Headers.Add("Accept", "application/json, text/event-stream");
-		if (sessionId != null)
-			request.Headers.Add("mcp-session-id", sessionId);
-
-		var response = await client.SendAsync(request);
+			jsonrpc = "2.0",
+			id = 2,
+			method = "resources/templates/list",
+			@params = new { },
+		}));
 		var body = await response.Content.ReadAsStringAsync();
 
 		Assert.True(response.IsSuccessStatusCode, $"Status: {response.StatusCode}, Body: {body}");
+	}
+
+	[Fact]
+	public async Task McpEndpoint_CallListApis_ReturnsContracts()
+	{
+		var client = CreateFactory().CreateClient();
+
+		var response = await client.SendAsync(McpRequest(new
+		{
+			jsonrpc = "2.0",
+			id = 3,
+			method = "tools/call",
+			@params = new { name = "list_apis", arguments = new { } },
+		}));
+		var body = await response.Content.ReadAsStringAsync();
+
+		Assert.True(response.IsSuccessStatusCode, $"Status: {response.StatusCode}, Body: {body}");
+		Assert.Contains("Service1.yaml", body);
 	}
 }
 

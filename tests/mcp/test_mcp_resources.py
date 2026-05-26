@@ -1,54 +1,37 @@
-"""E2E-тесты MCP resources: resources/list, api://{name}."""
+"""E2E-тесты MCP resources: resources/templates/list, api://{name}."""
 import httpx
-import pytest
-from conftest import initialize_session, mcp_request, parse_sse_response
+from conftest import mcp_request, parse_sse_response
 
 
-@pytest.fixture(scope="module")
-def session(mcp_client: httpx.Client) -> str | None:
-    return initialize_session(mcp_client)
-
-
-def list_resources(client: httpx.Client, session_id: str | None) -> dict:
-    payload = mcp_request("resources/list", {}, request_id=2)
+def list_resources(client: httpx.Client) -> dict:
+    payload = mcp_request("resources/templates/list", {}, request_id=2)
     headers = {"Accept": "application/json, text/event-stream"}
-    if session_id:
-        headers["mcp-session-id"] = session_id
     response = client.post("/", json=payload, headers=headers)
     response.raise_for_status()
     return parse_sse_response(response)
 
 
-def read_resource(client: httpx.Client, session_id: str | None, uri: str) -> dict:
+def read_resource(client: httpx.Client, uri: str) -> dict:
     payload = mcp_request("resources/read", {"uri": uri}, request_id=3)
     headers = {"Accept": "application/json, text/event-stream"}
-    if session_id:
-        headers["mcp-session-id"] = session_id
     response = client.post("/", json=payload, headers=headers)
     response.raise_for_status()
     return parse_sse_response(response)
 
 
-def test_resources_list_returns_contracts(mcp_client: httpx.Client, session: str | None) -> None:
-    """resources/list должен вернуть список ресурсов api://."""
-    result = list_resources(mcp_client, session)
+def test_resources_list_returns_contracts(mcp_client: httpx.Client) -> None:
+    """resources/templates/list должен вернуть список ресурсов api://."""
+    result = list_resources(mcp_client)
     assert "result" in result, f"Unexpected response: {result}"
-    resources = result["result"]["resources"]
-    assert len(resources) > 0, "resources/list returned empty list"
-    uris = [r["uri"] for r in resources]
-    assert any(uri.startswith("api://") for uri in uris), f"No api:// resources found: {uris}"
+    resources = result["result"]["resourceTemplates"]
+    assert len(resources) > 0, "resources/templates/list returned empty list"
+    uri_templates = [r["uriTemplate"] for r in resources]
+    assert any("api://" in t for t in uri_templates), f"No api:// resource templates found: {uri_templates}"
 
 
-def test_resource_get_returns_yaml(mcp_client: httpx.Client, session: str | None) -> None:
+def test_resource_get_returns_yaml(mcp_client: httpx.Client) -> None:
     """api://{name} должен вернуть YAML-содержимое контракта."""
-    # Сначала получаем список ресурсов
-    list_result = list_resources(mcp_client, session)
-    resources = list_result["result"]["resources"]
-    assert len(resources) > 0, "No resources available"
-
-    # Берём первый ресурс
-    first_uri = resources[0]["uri"]
-    result = read_resource(mcp_client, session, first_uri)
+    result = read_resource(mcp_client, "api://Analytics.DataExporter.V1.yaml")
     assert "result" in result, f"Unexpected response: {result}"
     contents = result["result"]["contents"]
     assert len(contents) > 0, "Resource returned empty contents"
